@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Topology Flaws Lab</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@600;800&family=Rajdhani:wght@400;600;700&display=swap');
+
+/* ══════════════════════════════════════════════════
+   DARK THEME  (default / cyberpunk)
+══════════════════════════════════════════════════ */
+:root {
+  --bg:            #060a0e;
+  --bg2:           #0a1018;
+  --surface:       #0d1520;
+  --surface2:      #121e2e;
+  --border:        #182535;
+  --border2:       #223348;
+
+  --orange:        #ff6a00;
+  --orange2:       #ff8c00;
+  --orange-dim:    #b84a00;
+  --orange-glow:   rgba(255,106,0,.4);
+  --orange-soft:   rgba(255,106,0,.09);
+  --orange-pulse:  rgba(255,106,0,.18);
+
+  --cyan:          #00d4ff;
+  --cyan-soft:     rgba(0,212,255,.08);
+
+  --green:         #00ff88;
+  --green-dim:     #00883f;
+  --red:           #ff2244;
+  --red-dim:       #880022;
+  --yellow:        #ffcc00;
+  --purple:        #cc44ff;
+  --purple-soft:   rgba(204,68,255,.1);
+
+  --text:          #7a96b0;
+  --text2:         #b0cce0;
+  --heading:       #e4f2ff;
+  --muted:         #2e4258;
+
+  --scan-op:       .022;
+  --grid-op:       .045;
+  --node-fill:     #0a1828;
+  --node-stroke:   #1e3a55;
+  --link-color:    #152535;
+  --link-ring:     #1a3a6a;
+  --link-bus:      #1a4080;
+  --gauge-track:   #0f1e2e;
+  --sw-fill:       #0c1a2a;
+  --tip-bg:        #0d1e30;
+}
+
+/* ══════════════════════════════════════════════════
+   LIGHT THEME  — applied when html has [data-theme="light"]
+   (set by JS via postMessage OR prefers-color-scheme)
+══════════════════════════════════════════════════ */
+html[data-theme="light"] {
+  --bg:            #eef2f7;
+  --bg2:           #e4eaf2;
+  --surface:       #ffffff;
+  --surface2:      #f5f8fc;
+  --border:        #c8d8e8;
+  --border2:       #aabdd0;
+
+  --orange:        #c84a00;
+  --orange2:       #dd6600;
+  --orange-dim:    #923600;
+  --orange-glow:   rgba(200,74,0,.22);
+  --orange-soft:   rgba(200,74,0,.07);
+  --orange-pulse:  rgba(200,74,0,.14);
+
+  --cyan:          #0077aa;
+  --cyan-soft:     rgba(0,119,170,.08);
+
+  --green:         #007a38;
+  --green-dim:     #004d22;
+  --red:           #bb1133;
+  --red-dim:       #880022;
+  --yellow:        #aa7700;
+  --purple:        #8800bb;
+  --purple-soft:   rgba(136,0,187,.1);
+
+  --text:          #4a6070;
+  --text2:         #1e3040;
+  --heading:       #080f18;
+  --muted:         #99b0c4;
+
+  --scan-op:       0;
+  --grid-op:       .03;
+  --node-fill:     #ddeeff;
+  --node-stroke:   #aaccee;
+  --link-color:    #c8dae8;
+  --link-ring:     #aaccee;
+  --link-bus:      #88aacc;
+  --gauge-track:   #dde8f0;
+  --sw-fill:       #e8f0fa;
+  --tip-bg:        #ffffff;
+}
+
+/* ══════════════════════════════════════════════════
+   BASE
+══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+html, body {
+  height: 100%;
+  transition: background .25s, color .25s;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text2);
+  font-family: 'Rajdhani', sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* cyberpunk grid */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: var(--grid-op);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* scanlines (dark only) */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,.55) 2px, rgba(0,0,0,.55) 4px
+  );
+  opacity: var(--scan-op);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.topbar, .lab { position: relative; z-index: 1; }
+
+/* ══════════════════════════════════════════════════
+   TOPBAR
+══════════════════════════════════════════════════ */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 10px;
+  box-shadow: 0 -3px 0 var(--orange) inset, 0 2px 24px rgba(0,0,0,.35);
+}
+
+.logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--orange);
+  white-space: nowrap;
+  letter-spacing: .1em;
+  text-shadow: 0 0 14px var(--orange-glow);
+  text-transform: uppercase;
+}
+.logo span { color: var(--muted); font-weight: 600; }
+
+.tabs { display: flex; gap: 2px; }
+.tab {
+  padding: 5px 12px;
+  border-radius: 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-family: 'Share Tech Mono', monospace;
+  transition: all .15s;
+}
+.tab:hover { color: var(--text2); border-color: var(--border2); }
+.tab.active {
+  background: var(--orange-soft);
+  border-color: var(--orange-dim);
+  color: var(--orange);
+  box-shadow: 0 0 10px var(--orange-glow);
+}
+
+.tbright { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+
+.tbtn {
+  padding: 5px 12px;
+  border-radius: 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Share Tech Mono', monospace;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.tbtn:hover { border-color: var(--orange-dim); color: var(--orange); box-shadow: 0 0 8px var(--orange-glow); }
+.tbtn.mitm-on {
+  background: var(--purple-soft);
+  border-color: var(--purple);
+  color: var(--purple);
+  box-shadow: 0 0 10px rgba(204,68,255,.35);
+}
+.tbtn.send-btn {
+  border-color: var(--orange-dim);
+  color: var(--orange);
+  background: var(--orange-soft);
+}
+.tbtn.send-btn:hover { box-shadow: 0 0 14px var(--orange-glow); }
+
+/* theme pill — shows current mode */
+.theme-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+}
+.theme-pill:hover { border-color: var(--orange-dim); color: var(--orange); }
+.theme-pill .tpicon { font-size: 12px; }
+.theme-pill .tplabel { font-size: 9px; }
+
+/* ══════════════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════════════ */
+.lab { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+/* ══════════════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════════════ */
+.sb {
+  width: 198px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  /* orange left accent */
+  box-shadow: 3px 0 0 var(--orange) inset;
+}
+
+.sb-sec {
+  padding: 8px 14px 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--orange-dim);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.sb-item {
+  padding: 7px 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-left: 3px solid transparent;
+  transition: all .2s;
+  letter-spacing: .02em;
+}
+.sb-item.act {
+  color: var(--orange);
+  border-left-color: var(--orange);
+  background: var(--orange-soft);
+  text-shadow: 0 0 8px var(--orange-glow);
+}
+.sb-item.done { color: var(--green); border-left-color: var(--green-dim); }
+
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border2);
+  flex-shrink: 0;
+  transition: all .2s;
+}
+.sb-item.act  .dot { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+.sb-item.done .dot { background: var(--green); box-shadow: 0 0 4px var(--green); }
+
+.flaw-box {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.8;
+  border-top: 1px solid var(--border);
+  overflow-y: auto;
+}
+.flaw-box b { color: var(--orange); }
+
+/* ══════════════════════════════════════════════════
+   CANVAS
+══════════════════════════════════════════════════ */
+.cvs { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+.cvs-head {
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface2);
+}
+.cvs-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--orange);
+  letter-spacing: .06em;
+  text-shadow: 0 0 10px var(--orange-glow);
+}
+.cvs-desc {
+  font-size: 11.5px;
+  color: var(--text);
+  margin-top: 3px;
+  line-height: 1.55;
+  font-weight: 400;
+}
+.flaw-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 2px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  margin-top: 6px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.flaw-badge.red    { background: rgba(255,34,68,.08); border: 1px solid rgba(255,34,68,.35); color: var(--red); }
+.flaw-badge.orange { background: var(--orange-soft);   border: 1px solid var(--orange-dim);   color: var(--orange); }
+.flaw-badge.purple { background: var(--purple-soft);   border: 1px solid var(--purple);       color: var(--purple); }
+
+.svgwrap { flex: 1; position: relative; overflow: hidden; background: var(--bg2); }
+svg#msv { width: 100%; height: 100%; }
+
+.tip {
+  position: absolute;
+  background: var(--tip-bg);
+  border: 1px solid var(--orange-dim);
+  border-radius: 2px;
+  padding: 5px 10px;
+  font-size: 10.5px;
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--orange);
+  pointer-events: none;
+  z-index: 999;
+  display: none;
+  white-space: nowrap;
+  box-shadow: 0 0 10px var(--orange-glow);
+}
+
+/* ══════════════════════════════════════════════════
+   DoS GAUGE
+══════════════════════════════════════════════════ */
+.gauge-overlay {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: flex-end;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-top: 2px solid var(--orange-dim);
+  border-radius: 4px;
+  padding: 12px 18px;
+  box-shadow: 0 0 20px rgba(0,0,0,.5), 0 0 14px var(--orange-glow);
+}
+.gauge-col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.gauge-label {
+  font-size: 9px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--orange-dim);
+  font-family: 'Share Tech Mono', monospace;
+}
+.gauge-status {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10.5px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  background: rgba(0,255,136,.08);
+  border: 1px solid rgba(0,255,136,.3);
+  color: var(--green);
+  letter-spacing: .08em;
+}
+.gauge-status.warn { background: rgba(255,204,0,.08); border-color: rgba(255,204,0,.35); color: var(--yellow); }
+.gauge-status.crit {
+  background: rgba(255,34,68,.1); border-color: rgba(255,34,68,.45); color: var(--red);
+  animation: cb .45s infinite;
+}
+.gauge-hint {
+  font-size: 9px; color: var(--muted);
+  font-family: 'Share Tech Mono', monospace;
+  text-align: center; letter-spacing: .04em;
+}
+@keyframes cb { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+/* ══════════════════════════════════════════════════
+   RIGHT PANEL
+══════════════════════════════════════════════════ */
+.rp {
+  width: 242px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  box-shadow: -3px 0 0 var(--orange-dim) inset;
+}
+
+.rp-sec {
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--border);
+}
+.rp-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--orange-dim);
+  margin-bottom: 5px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.rp-val {
+  font-size: 12px;
+  color: var(--heading);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.sdot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  transition: all .3s;
+}
+.sdot.ok     { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+.sdot.warn   { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+.sdot.fail   { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+.sdot.purple { background: var(--purple); box-shadow: 0 0 6px var(--purple); }
+
+.log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 7px 11px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  line-height: 1.95;
+  min-height: 0;
+  background: var(--bg2);
+}
+/* custom scrollbar */
+.log::-webkit-scrollbar { width: 4px; }
+.log::-webkit-scrollbar-track { background: var(--bg2); }
+.log::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.le        { margin-bottom: 1px; }
+.le.ok     { color: var(--green); }
+.le.fail   { color: var(--red); }
+.le.warn   { color: var(--yellow); }
+.le.info   { color: var(--muted); }
+.le.mitm   { color: var(--purple); }
+.le.orange { color: var(--orange); }
+
+.act-area {
+  padding: 10px 13px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.abtn {
+  padding: 8px 12px;
+  border-radius: 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--orange-dim);
+  background: var(--orange-soft);
+  color: var(--orange);
+  font-family: 'Share Tech Mono', monospace;
+  width: 100%;
+  transition: all .15s;
+}
+.abtn:hover { box-shadow: 0 0 12px var(--orange-glow); background: var(--orange-pulse); }
+
+/* corner decorations — cyberpunk brackets */
+.cvs-head::before {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 8px; height: 8px;
+  border-top: 2px solid var(--orange);
+  border-left: 2px solid var(--orange);
+  left: 0; top: 0;
+  opacity: .6;
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="logo">⬡ <span>NET /</span> TOPOLOGIES</div>
+    <div class="tabs">
+      <div class="tab active" onclick="loadTopo('star')">★ STAR</div>
+      <div class="tab" onclick="loadTopo('bus')">▬ BUS</div>
+      <div class="tab" onclick="loadTopo('ring')">◎ RING</div>
+    </div>
+  </div>
+  <div class="tbright" id="tbright">
+    <!-- theme pill + action buttons injected here -->
+    <div class="theme-pill" id="theme-pill" onclick="manualToggle()" title="Toggle theme">
+      <span class="tpicon" id="tpicon">🌙</span>
+      <span class="tplabel" id="tplabel">DARK</span>
+    </div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="lab">
+
+  <!-- SIDEBAR -->
+  <div class="sb">
+    <div class="sb-sec">// TASKS</div>
+    <div class="sb-item act" id="t1"><div class="dot"></div><span id="t1l">—</span></div>
+    <div class="sb-item"     id="t2"><div class="dot"></div><span id="t2l">—</span></div>
+    <div class="sb-item"     id="t3"><div class="dot"></div><span id="t3l">—</span></div>
+    <div class="sb-item"     id="t4"><div class="dot"></div><span id="t4l">—</span></div>
+    <div class="sb-item"     id="t5"><div class="dot"></div><span id="t5l">Reset & retry</span></div>
+    <div class="flaw-box" id="flaw-box">—</div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="cvs">
+    <div class="cvs-head" style="position:relative;">
+      <div class="cvs-title" id="ctitle">—</div>
+      <div class="cvs-desc"  id="cdesc">—</div>
+      <div class="flaw-badge orange" id="cflaw">—</div>
+    </div>
+    <div class="svgwrap" id="svgwrap">
+      <svg id="msv"></svg>
+      <div class="tip" id="tip"></div>
+
+      <!-- DoS Gauge (Bus only) -->
+      <div class="gauge-overlay" id="gauge">
+        <div class="gauge-col">
+          <div class="gauge-label">// Network Load</div>
+          <svg width="122" height="70" viewBox="0 0 122 70">
+            <path d="M13,66 A48,48 0 0,1 109,66" fill="none" stroke="var(--gauge-track)" stroke-width="11" stroke-linecap="round"/>
+            <path id="garc" d="M13,66 A48,48 0 0,1 109,66" fill="none" stroke="var(--green)" stroke-width="11" stroke-linecap="round"
+              stroke-dasharray="151" stroke-dashoffset="151" style="transition:stroke-dashoffset .22s,stroke .22s"/>
+            <circle cx="61" cy="66" r="4" fill="var(--surface2)"/>
+            <text id="gpct" x="61" y="53" text-anchor="middle"
+              font-family="'Share Tech Mono',monospace" font-size="17" font-weight="700" fill="var(--orange)">0%</text>
+          </svg>
+          <div class="gauge-status" id="gstatus">NORMAL</div>
+          <div class="gauge-hint">SPAM ▶ FAST TO FLOOD · SLOW TO RECOVER</div>
+        </div>
+        <div class="gauge-col" style="gap:7px;padding-left:12px;border-left:1px solid var(--border2);">
+          <div style="font-size:9px;color:var(--orange-dim);font-weight:700;letter-spacing:.1em;font-family:'Share Tech Mono',monospace;">STATS</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10.5px;color:var(--muted);">SENT&nbsp; <span id="gpkts" style="color:var(--heading)">0</span></div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10.5px;color:var(--muted);">COLL&nbsp; <span id="gcoll" style="color:var(--yellow)">0</span></div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10.5px;color:var(--muted);">DROP&nbsp; <span id="gdrop" style="color:var(--red)">0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="rp">
+    <div class="rp-sec">
+      <div class="rp-label">// Status</div>
+      <div class="rp-val"><span class="sdot ok" id="sdot"></span><span id="stext">OPERATIONAL</span></div>
+    </div>
+    <div class="rp-sec">
+      <div class="rp-label" id="rlabel">// Route</div>
+      <div class="rp-val" id="routeval">— select nodes —</div>
+    </div>
+    <div class="rp-sec"><div class="rp-label">// Packet Log</div></div>
+    <div class="log" id="plog"><div class="le info">// system ready_</div></div>
+    <div class="act-area"><button class="abtn" onclick="resetAll()">↺ RESET NETWORK</button></div>
+  </div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   THEME ENGINE
+   Priority: postMessage > localStorage > prefers-color-scheme
+══════════════════════════════════════════════════ */
+(function initTheme(){
+  function applyTheme(t){
+    document.documentElement.setAttribute('data-theme', t);
+    const icon  = document.getElementById('tpicon');
+    const label = document.getElementById('tplabel');
+    if(icon)  icon.textContent  = t==='dark' ? '🌙' : '☀️';
+    if(label) label.textContent = t==='dark' ? 'DARK' : 'LIGHT';
+    try{ localStorage.setItem('topo-theme', t); } catch(e){}
+  }
+
+  // 1. Listen for postMessage from parent site
+  //    Expected format: { type: 'setTheme', theme: 'dark'|'light' }
+  //    OR: { type: 'setTheme', dark: true|false }
+  window.addEventListener('message', (e)=>{
+    const d = e.data;
+    if(!d || d.type !== 'setTheme') return;
+    const t = d.theme || (d.dark === false ? 'light' : d.dark === true ? 'dark' : null);
+    if(t === 'dark' || t === 'light') applyTheme(t);
+  });
+
+  // 2. Listen for OS-level changes (prefers-color-scheme)
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  mq.addEventListener('change', (e)=>{
+    // only follow OS if no manual override saved
+    if(!localStorage.getItem('topo-theme-manual')){
+      applyTheme(e.matches ? 'dark' : 'light');
+    }
+  });
+
+  // 3. Initial: check localStorage override first, then OS
+  try {
+    const saved = localStorage.getItem('topo-theme');
+    if(saved === 'dark' || saved === 'light'){
+      applyTheme(saved); return;
+    }
+  } catch(e){}
+  applyTheme(mq.matches ? 'dark' : 'light');
+})();
+
+// Manual toggle from the pill button
+function manualToggle(){
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  const icon  = document.getElementById('tpicon');
+  const label = document.getElementById('tplabel');
+  if(icon)  icon.textContent  = next==='dark' ? '🌙' : '☀️';
+  if(label) label.textContent = next==='dark' ? 'DARK' : 'LIGHT';
+  try{
+    localStorage.setItem('topo-theme', next);
+    localStorage.setItem('topo-theme-manual','1');
+  } catch(e){}
+  // Notify parent if embedded in an iframe
+  try{ window.parent.postMessage({ type:'themeChanged', theme:next }, '*'); } catch(e){}
+}
+
+/* ══════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════ */
+let topo='star', mitm=false;
+let cutSet=new Set(), src=null, dst=null, nodes=[], links=[];
+let switchBroken=false;
+let dosLoad=0, dosSent=0, dosColl=0, dosDrop=0, dosDown=false;
+let dosDecayTimer=null;
+const DOS_WARN=55, DOS_CRIT=80, DOS_DEAD=100;
+const DOS_INC=14, DOS_DECAY=4, DOS_DECAY_MS=600;
+let hoverScEl=null;
+
+/* ══════════════════════════════════════════════════
+   CSS VAR READER (for SVG colors that can't use var())
+══════════════════════════════════════════════════ */
+function cv(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/* ══════════════════════════════════════════════════
+   TOPOLOGY DEFINITIONS
+══════════════════════════════════════════════════ */
+const DEFS={
+  star:{
+    title:'★ STAR TOPOLOGY',
+    desc:'Send packets between nodes. Hover the SWITCH to reveal the hammer — click to smash it and see the entire network collapse.',
+    flaw:'// SINGLE POINT OF FAILURE',
+    flawClass:'orange',
+    flawInfo:`The <b>switch</b> is the heart — every node routes through it. Compromise or destroy it and <b>everyone loses connectivity instantly</b>. Hover the switch → see the hammer → click to smash.`,
+    tasks:['Select SRC & DST','Send a packet','Hover the switch','Smash the switch 🔨','Observe total failure'],
+    nodes:[
+      {id:'SW',label:'SWITCH',x:390,y:248,type:'switch'},
+      {id:'PC1',label:'PC-1',x:390,y:76},
+      {id:'PC2',label:'PC-2',x:566,y:146},
+      {id:'PC3',label:'PC-3',x:602,y:324},
+      {id:'PC4',label:'PC-4',x:452,y:430},
+      {id:'PC5',label:'PC-5',x:206,y:410},
+      {id:'PC6',label:'PC-6',x:156,y:202},
+    ],
+    links:[{a:'SW',b:'PC1'},{a:'SW',b:'PC2'},{a:'SW',b:'PC3'},{a:'SW',b:'PC4'},{a:'SW',b:'PC5'},{a:'SW',b:'PC6'}],
+    getPath(s,d){
+      if(switchBroken) return null;
+      if(cutSet.has(lid(s,'SW'))||cutSet.has(lid('SW',d))) return null;
+      return mitm?[s,'SW','SW',d]:[s,'SW',d];
+    }
+  },
+  bus:{
+    title:'▬ BUS TOPOLOGY',
+    desc:'Spam ▶ SEND PACKET rapidly — load climbs fast. Stop clicking and it decays. Sustain the flood to trigger a DoS collapse.',
+    flaw:'// DoS VIA COLLISION FLOOD',
+    flawClass:'red',
+    flawInfo:`Only <b>one device</b> can transmit at a time on the shared cable. Rapid sends collide. Sustain the flood and the network <b>collapses</b>. Slow down and it <b>slowly recovers</b>.`,
+    tasks:['Select SRC & DST','Send one packet','Spam send rapidly','Watch gauge redline','Slow down — observe recovery'],
+    nodes:[
+      {id:'PC1',label:'PC-1',x:100,y:126},{id:'PC2',label:'PC-2',x:232,y:126},
+      {id:'PC3',label:'PC-3',x:364,y:126},{id:'PC4',label:'PC-4',x:496,y:126},
+      {id:'PC5',label:'PC-5',x:628,y:126},{id:'PC6',label:'PC-6',x:720,y:126},
+      {id:'B1',x:100,y:268,type:'bus'},{id:'B2',x:232,y:268,type:'bus'},
+      {id:'B3',x:364,y:268,type:'bus'},{id:'B4',x:496,y:268,type:'bus'},
+      {id:'B5',x:628,y:268,type:'bus'},{id:'B6',x:720,y:268,type:'bus'},
+      {id:'TL',label:'T',x:26,y:268,type:'term'},{id:'TR',label:'T',x:792,y:268,type:'term'},
+    ],
+    links:[
+      {a:'TL',b:'B1',bus:true},{a:'B1',b:'B2',bus:true},{a:'B2',b:'B3',bus:true},
+      {a:'B3',b:'B4',bus:true},{a:'B4',b:'B5',bus:true},{a:'B5',b:'B6',bus:true},{a:'B6',b:'TR',bus:true},
+      {a:'PC1',b:'B1'},{a:'PC2',b:'B2'},{a:'PC3',b:'B3'},
+      {a:'PC4',b:'B4'},{a:'PC5',b:'B5'},{a:'PC6',b:'B6'},
+    ],
+    getPath(s,d){
+      if(dosDown) return null;
+      const bmap={PC1:'B1',PC2:'B2',PC3:'B3',PC4:'B4',PC5:'B5',PC6:'B6'};
+      const bb=['TL','B1','B2','B3','B4','B5','B6','TR'];
+      const bs=bmap[s],bd=bmap[d]; if(!bs||!bd) return null;
+      const si=bb.indexOf(bs),di=bb.indexOf(bd);
+      const p=[s,bs];
+      if(si<di) for(let i=si+1;i<=di;i++) p.push(bb[i]);
+      else for(let i=si-1;i>=di;i--) p.push(bb[i]);
+      p.push(d); return p;
+    }
+  },
+  ring:{
+    title:'◎ RING TOPOLOGY',
+    desc:'Hover any cable — scissors appear. Click to sever it. One cut is all it takes to kill the entire ring.',
+    flaw:'// ONE CUT = TOTAL RING FAILURE',
+    flawClass:'red',
+    flawInfo:`Data travels in <b>one direction</b> only. There is no redundant path. Sever <b>any</b> single cable and the whole ring goes dark — <b>all</b> devices lose communication.`,
+    tasks:['Select SRC & DST','Send a packet','Hover a cable','Cut the cable ✂️','Observe total failure'],
+    nodes:[
+      {id:'PC1',label:'PC-1',x:390,y:64},
+      {id:'PC2',label:'PC-2',x:578,y:148},
+      {id:'PC3',label:'PC-3',x:614,y:332},
+      {id:'PC4',label:'PC-4',x:468,y:448},
+      {id:'PC5',label:'PC-5',x:250,y:446},
+      {id:'PC6',label:'PC-6',x:114,y:314},
+      {id:'PC7',label:'PC-7',x:155,y:126},
+    ],
+    links:[
+      {a:'PC1',b:'PC2',ring:true},{a:'PC2',b:'PC3',ring:true},
+      {a:'PC3',b:'PC4',ring:true},{a:'PC4',b:'PC5',ring:true},
+      {a:'PC5',b:'PC6',ring:true},{a:'PC6',b:'PC7',ring:true},
+      {a:'PC7',b:'PC1',ring:true},
+    ],
+    getPath(s,d){
+      if(cutSet.size>0) return null;
+      const order=['PC1','PC2','PC3','PC4','PC5','PC6','PC7'];
+      const si=order.indexOf(s); if(si===-1) return null;
+      const p=[s]; let cur=si;
+      for(let i=0;i<order.length;i++){
+        cur=(cur+1)%order.length; p.push(order[cur]);
+        if(order[cur]===d) break;
+      }
+      return p;
+    }
+  }
+};
+
+/* ══════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════ */
+function lid(a,b){return [a,b].sort().join('~~');}
+function getNode(id){return nodes.find(n=>n.id===id);}
+function $s(t){return document.createElementNS('http://www.w3.org/2000/svg',t);}
+function sa(el,at){Object.entries(at).forEach(([k,v])=>el.setAttribute(k,v));}
+function setRV(v){const e=document.getElementById('routeval');if(e)e.textContent=v;}
+
+/* ══════════════════════════════════════════════════
+   LOAD TOPOLOGY
+══════════════════════════════════════════════════ */
+function loadTopo(name){
+  topo=name; cutSet.clear(); src=null; dst=null;
+  mitm=false; switchBroken=false;
+  dosLoad=0; dosSent=0; dosColl=0; dosDrop=0; dosDown=false;
+  hoverScEl=null;
+  clearInterval(dosDecayTimer); dosDecayTimer=null;
+
+  const def=DEFS[name];
+  nodes=def.nodes.map(n=>({...n}));
+  links=def.links.map(l=>({...l}));
+
+  document.getElementById('ctitle').textContent=def.title;
+  document.getElementById('cdesc').textContent=def.desc;
+  const fb=document.getElementById('cflaw');
+  fb.textContent=def.flaw; fb.className='flaw-badge '+def.flawClass;
+  document.getElementById('flaw-box').innerHTML=def.flawInfo;
+
+  def.tasks.forEach((txt,i)=>{
+    const s=document.getElementById(`t${i+1}l`); if(s) s.textContent=txt;
+    const el=document.getElementById(`t${i+1}`); if(el) el.className='sb-item'+(i===0?' act':'');
+  });
+  taskDone.clear();
+
+  document.querySelectorAll('.tab').forEach(t=>{
+    const m={star:'STAR',bus:'BUS',ring:'RING'};
+    t.classList.toggle('active',t.textContent.includes(m[name]));
+  });
+
+  document.getElementById('rlabel').textContent=name==='bus'?'// DoS Load':'// Route';
+  setRV('— select nodes —');
+  buildToolbar(name);
+  document.getElementById('gauge').style.display=name==='bus'?'flex':'none';
+  if(name==='bus'){ updateGauge(); startDecay(); }
+
+  draw(); updateStatus();
+  addLog(`> LOADED: ${def.title}`,'orange');
+}
+
+/* ══════════════════════════════════════════════════
+   TOOLBAR
+══════════════════════════════════════════════════ */
+function buildToolbar(name){
+  const tb=document.getElementById('tbright');
+  // keep theme pill, rebuild action buttons
+  const pill=document.getElementById('theme-pill');
+  tb.innerHTML=''; tb.appendChild(pill);
+
+  if(name==='star'){
+    const b=document.createElement('div');
+    b.className='tbtn'; b.id='mitm-btn'; b.textContent='🕵 MITM';
+    b.onclick=toggleMitm; tb.appendChild(b);
+  }
+  const sb=document.createElement('div');
+  sb.className='tbtn send-btn'; sb.textContent='▶ SEND PKT';
+  sb.onclick=sendPacket; tb.appendChild(sb);
+}
+
+/* ══════════════════════════════════════════════════
+   DRAW SVG
+══════════════════════════════════════════════════ */
+function draw(){
+  const svg=document.getElementById('msv');
+  svg.setAttribute('viewBox','0 0 800 530');
+  svg.innerHTML='';
+
+  const isDark=(document.documentElement.getAttribute('data-theme')||'dark')==='dark';
+
+  /* defs */
+  const defs=$s('defs');
+  defs.innerHTML=`
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="oglow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="rglow" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shatter" x="-80%" y="-80%" width="260%" height="260%">
+      <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <radialGradient id="nodegrad" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="${isDark?'#1a3050':'#ddeeff'}"/>
+      <stop offset="100%" stop-color="${isDark?'#0a1828':'#c8daf0'}"/>
+    </radialGradient>
+    <radialGradient id="swgrad" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="${isDark?'#1a2840':'#dde8f8'}"/>
+      <stop offset="100%" stop-color="${isDark?'#0a1520':'#c0d0e8'}"/>
+    </radialGradient>
+  `;
+  svg.appendChild(defs);
+
+  if(topo==='ring'){
+    const hint=$s('text');
+    sa(hint,{x:390,y:270,'text-anchor':'middle',fill:isDark?'rgba(255,106,0,.15)':'rgba(200,74,0,.2)',
+      'font-size':11,'font-family':'Share Tech Mono,monospace'});
+    hint.textContent='↻ CLOCKWISE'; svg.appendChild(hint);
+  }
+
+  /* ── LINKS ── */
+  const lg=$s('g');
+  links.forEach(lk=>{
+    const na=getNode(lk.a),nb=getNode(lk.b); if(!na||!nb) return;
+    const cut=cutSet.has(lid(lk.a,lk.b));
+    const swDead=switchBroken&&(lk.a==='SW'||lk.b==='SW');
+    const isMitmLink=mitm&&(lk.a==='SW'||lk.b==='SW');
+
+    const line=$s('line');
+    const stroke=cut||swDead ? cv('--red')
+                : isMitmLink ? cv('--purple')
+                : lk.bus     ? (isDark?'#1e4a8a':'#88aacc')
+                : lk.ring    ? (isDark?'#1a3a70':'#99bbdd')
+                :               (isDark?'#152535':'#b8cce0');
+    sa(line,{x1:na.x,y1:na.y,x2:nb.x,y2:nb.y,
+      stroke,
+      'stroke-width': lk.bus?5: lk.ring?2.5:2,
+      'stroke-linecap':'round',
+      'stroke-dasharray': cut||swDead?'6,5':'0',
+      opacity: cut||swDead?.4:1
+    });
+    if(isMitmLink&&!cut) line.setAttribute('filter','url(#glow)');
+    lg.appendChild(line);
+
+    /* ring cable hover area → scissors */
+    if(topo==='ring'&&!cut){
+      const hit=$s('line');
+      sa(hit,{x1:na.x,y1:na.y,x2:nb.x,y2:nb.y,stroke:'transparent','stroke-width':24});
+      hit.style.cursor='crosshair';
+
+      hit.addEventListener('mouseenter',(e)=>{
+        removeHoverSc();
+        const sc=$s('text');
+        sa(sc,{x:0,y:0,'text-anchor':'middle','font-size':22,id:'hsc',
+          style:'pointer-events:none;filter:drop-shadow(0 0 5px #ff2244);'});
+        sc.textContent='✂️'; svg.appendChild(sc);
+        hoverScEl=sc;
+        line.setAttribute('stroke',cv('--orange'));
+        line.setAttribute('stroke-width','3.5');
+        showTip(e,'CLICK TO SEVER CABLE');
+        doneTask(3);
+      });
+      hit.addEventListener('mousemove',(e)=>{
+        if(hoverScEl){
+          const r=document.getElementById('svgwrap').getBoundingClientRect();
+          const px=(e.clientX-r.left)/r.width*800;
+          const py=(e.clientY-r.top)/r.height*530;
+          hoverScEl.setAttribute('x',px+12);
+          hoverScEl.setAttribute('y',py+12);
+        }
+        showTip(e,'CLICK TO SEVER CABLE');
+      });
+      hit.addEventListener('mouseleave',()=>{
+        removeHoverSc();
+        line.setAttribute('stroke',isDark?'#1a3a70':'#99bbdd');
+        line.setAttribute('stroke-width','2.5');
+        hideTip();
+      });
+      hit.addEventListener('click',()=>cutCable(lk.a,lk.b,na,nb));
+      lg.appendChild(hit);
+    }
+  });
+  svg.appendChild(lg);
+
+  /* ── NODES ── */
+  const ng=$s('g');
+  nodes.forEach(n=>{
+    if(n.type==='bus') return;
+    const g=$s('g');
+    if(n.type==='switch')    drawSwitch(g,n,isDark);
+    else if(n.type==='term') drawTerm(g,n);
+    else                     drawPC(g,n,isDark);
+    ng.appendChild(g);
+  });
+  svg.appendChild(ng);
+}
+
+/* ─ SWITCH ─ */
+function drawSwitch(g,n,dark){
+  const broken=switchBroken, isMitm=mitm&&!broken;
+  const r=$s('rect');
+  sa(r,{x:n.x-50,y:n.y-22,width:100,height:44,rx:3,
+    fill:'url(#swgrad)',
+    stroke: broken?cv('--red'): isMitm?cv('--purple'): cv('--orange'),
+    'stroke-width': broken?1.5:2,
+    'stroke-dasharray': broken?'5,3':'0',
+    opacity: broken?.5:1
+  });
+  if(broken) r.setAttribute('filter','url(#shatter)');
+  if(isMitm) r.setAttribute('filter','url(#glow)');
+  g.appendChild(r);
+
+  /* corner brackets — cyberpunk style */
+  if(!broken){
+    [[-50,-22],[ 42,-22],[-50,14],[ 42,14]].forEach(([ox,oy],i)=>{
+      const bx=n.x+ox+( i%2===0 ? 0 : 6);
+      const by=n.y+oy+( i<2     ? 0 : 2);
+      const lh=$s('line'), lv=$s('line');
+      const sx=i%2===0?1:-1, sy=i<2?1:-1;
+      sa(lh,{x1:bx,y1:by,x2:bx+sx*10,y2:by,stroke:cv('--orange-dim'),'stroke-width':1.5,'stroke-linecap':'round'});
+      sa(lv,{x1:bx,y1:by,x2:bx,y2:by+sy*8,stroke:cv('--orange-dim'),'stroke-width':1.5,'stroke-linecap':'round'});
+      g.appendChild(lh); g.appendChild(lv);
+    });
+  }
+
+  const lbl=$s('text');
+  sa(lbl,{x:n.x,y:n.y+5,'text-anchor':'middle',
+    fill: broken?cv('--red'): isMitm?cv('--purple'): cv('--orange'),
+    'font-family':'Share Tech Mono,monospace','font-size':11.5,'font-weight':700,
+    'letter-spacing':'.06em'
+  });
+  if(broken) lbl.setAttribute('filter','url(#rglow)');
+  lbl.textContent=broken?'DEAD': isMitm?'[MitM]':'SWITCH';
+  g.appendChild(lbl);
+
+  if(!broken){
+    g.style.cursor='pointer';
+    g.addEventListener('mouseenter',(e)=>{
+      if(switchBroken) return;
+      doneTask(3);
+      removeHammer();
+      const svg=document.getElementById('msv');
+      const h=$s('text');
+      sa(h,{x:n.x+60,y:n.y-10,'font-size':28,id:'hammer-ico',
+        style:'pointer-events:none;',
+        transform:`rotate(-35,${n.x+60},${n.y-10})`
+      });
+      h.textContent='🔨'; svg.appendChild(h);
+      let ang=-35, dir=1;
+      h._bob=setInterval(()=>{
+        if(!document.getElementById('hammer-ico')){ clearInterval(h._bob); return; }
+        ang+=dir*2.5; if(Math.abs(ang+35)>10) dir=-dir;
+        h.setAttribute('transform',`rotate(${ang},${n.x+60},${n.y-10})`);
+      },35);
+      showTip(e,'🔨 CLICK TO SMASH SWITCH');
+    });
+    g.addEventListener('mouseleave',()=>{ removeHammer(); hideTip(); });
+    g.addEventListener('click',()=>{ if(topo==='star'&&!switchBroken) smashSwitch(n); });
+  }
+}
+
+/* ─ TERMINATOR ─ */
+function drawTerm(g,n){
+  const r=$s('rect');
+  sa(r,{x:n.x-13,y:n.y-13,width:26,height:26,rx:2,
+    fill:cv('--surface2'), stroke:cv('--red'),'stroke-width':1.5});
+  g.appendChild(r);
+  const t=$s('text');
+  sa(t,{x:n.x,y:n.y+5,'text-anchor':'middle',fill:cv('--red'),
+    'font-size':10,'font-family':'Share Tech Mono,monospace'});
+  t.textContent='T'; g.appendChild(t);
+}
+
+/* ─ PC NODE ─ */
+function drawPC(g,n,dark){
+  const isSrc=src===n.id, isDst=dst===n.id;
+  const stroke=isSrc?cv('--orange'):isDst?cv('--green'):cv('--node-stroke');
+  const fill=isSrc?`rgba(255,106,0,.12)`:isDst?`rgba(0,255,136,.1)`:  'url(#nodegrad)';
+
+  const c=$s('circle');
+  sa(c,{cx:n.x,cy:n.y,r:26,fill,stroke,'stroke-width':isSrc||isDst?2.5:1.5});
+  if(isSrc) sa(c,{filter:'url(#oglow)'});
+  else if(isDst) sa(c,{filter:'url(#glow)'});
+  g.appendChild(c);
+
+  /* hexagonal accent ring */
+  const hex=$s('circle');
+  sa(hex,{cx:n.x,cy:n.y,r:30,fill:'none',
+    stroke:isSrc?cv('--orange-dim'):isDst?cv('--green-dim'):cv('--border'),
+    'stroke-width':.8,'stroke-dasharray':isSrc||isDst?'3,3':'4,5',opacity:.7});
+  g.appendChild(hex);
+
+  const ico=$s('text');
+  sa(ico,{x:n.x,y:n.y+6,'text-anchor':'middle','dominant-baseline':'middle','font-size':14});
+  ico.textContent='⬡'; g.appendChild(ico);
+
+  const lbl=$s('text');
+  sa(lbl,{x:n.x,y:n.y+40,'text-anchor':'middle',
+    fill:isSrc?cv('--orange'):isDst?cv('--green'):cv('--muted'),
+    'font-size':10,'font-family':'Share Tech Mono,monospace','font-weight':700,
+    'letter-spacing':'.06em'
+  });
+  lbl.textContent=n.label||n.id; g.appendChild(lbl);
+
+  if(isSrc||isDst){
+    const tag=$s('text');
+    sa(tag,{x:n.x,y:n.y-36,'text-anchor':'middle',
+      fill:isSrc?cv('--orange'):cv('--green'),
+      'font-size':8,'font-family':'Share Tech Mono,monospace','font-weight':700,'letter-spacing':'.1em'
+    });
+    tag.textContent=isSrc?'[SRC]':'[DST]'; g.appendChild(tag);
+  }
+
+  g.style.cursor='pointer';
+  g.addEventListener('click',()=>selectNode(n.id));
+  g.addEventListener('mouseenter',()=>{ if(!isSrc&&!isDst){ c.setAttribute('stroke',cv('--orange-dim')); c.setAttribute('filter','url(#oglow)'); }});
+  g.addEventListener('mouseleave',()=>{ if(!isSrc&&!isDst){ c.setAttribute('stroke',cv('--node-stroke')); c.removeAttribute('filter'); }});
+}
+
+/* ══════════════════════════════════════════════════
+   CUT CABLE
+══════════════════════════════════════════════════ */
+function cutCable(a,b,na,nb){
+  removeHoverSc(); hideTip();
+  cutSet.add(lid(a,b)); draw(); updateStatus();
+  addLog(`> ✂ ${a} ↔ ${b} — SEVERED`,'fail');
+  addLog(`> RING BROKEN — TOTAL FAILURE`,'fail');
+  doneTask(4);
+
+  const svg=document.getElementById('msv');
+  const mx=(na.x+nb.x)/2, my=(na.y+nb.y)/2;
+
+  /* X sparks */
+  [[mx-10,my-10,mx+10,my+10],[mx+10,my-10,mx-10,my+10]].forEach(([x1,y1,x2,y2])=>{
+    const xl=$s('line');
+    sa(xl,{x1,y1,x2,y2,stroke:cv('--red'),'stroke-width':3,'stroke-linecap':'round',filter:'url(#rglow)'});
+    svg.appendChild(xl);
+    let op=1; const f=setInterval(()=>{ op-=.03; xl.setAttribute('opacity',Math.max(0,op)); if(op<=0){clearInterval(f);xl.remove();} },35);
+  });
+
+  /* floating label */
+  const st=$s('text');
+  sa(st,{x:mx,y:my-14,'text-anchor':'middle',fill:cv('--red'),'font-size':10,'font-weight':700,
+    'font-family':'Share Tech Mono,monospace',filter:'url(#rglow)','letter-spacing':'.1em'});
+  st.textContent='SEVERED'; svg.appendChild(st);
+  let sy=my-14,sop=1;
+  const sf=setInterval(()=>{ sop-=.02; sy-=.5; st.setAttribute('y',sy); st.setAttribute('opacity',Math.max(0,sop)); if(sop<=0){clearInterval(sf);st.remove();} },35);
+}
+
+/* ══════════════════════════════════════════════════
+   SMASH SWITCH
+══════════════════════════════════════════════════ */
+function smashSwitch(n){
+  removeHammer(); hideTip(); doneTask(4);
+  const svg=document.getElementById('msv');
+  const h=$s('text');
+  sa(h,{x:n.x+12,y:n.y-44,'text-anchor':'middle','font-size':42,style:'pointer-events:none;'});
+  h.textContent='🔨'; svg.appendChild(h);
+
+  let frame=0;
+  const slam=setInterval(()=>{
+    frame++;
+    const t=frame/14;
+    const y=n.y-44+(44*t);
+    const scale=1+0.6*(1-t);
+    const rot=-38+38*t;
+    h.setAttribute('y',y);
+    h.setAttribute('transform',`scale(${scale}) rotate(${rot},${n.x+12},${y})`);
+    if(frame>=14){
+      clearInterval(slam);
+      h.remove();
+      spawnShatter(n.x,n.y);
+      switchBroken=true;
+      draw(); updateStatus();
+      addLog(`> 💥 SWITCH DESTROYED — NETWORK DOWN`,'fail');
+      addLog(`> ALL ${nodes.filter(x=>!x.type||x.type==='pc').length} NODES OFFLINE`,'fail');
+      nodes.filter(x=>!x.type||x.type==='pc').forEach(x=>
+        setTimeout(()=>flashNode(x.id,cv('--red')),Math.random()*380));
+    }
+  },18);
+}
+
+function spawnShatter(cx,cy){
+  const svg=document.getElementById('msv');
+  const parts=['◆','▲','●','✕','◉','▪'];
+  for(let i=0;i<16;i++){
+    const p=$s('text');
+    const angle=Math.random()*Math.PI*2;
+    const spd=50+Math.random()*90;
+    const vx=Math.cos(angle)*spd, vy=Math.sin(angle)*spd;
+    sa(p,{x:cx,y:cy,'font-size':8+Math.random()*12,'text-anchor':'middle',
+      fill:[cv('--orange'),cv('--red'),cv('--yellow'),'#ffffff'][Math.floor(Math.random()*4)],
+      style:'pointer-events:none;'});
+    p.textContent=parts[Math.floor(Math.random()*parts.length)];
+    svg.appendChild(p);
+    let px=cx,py=cy,op=1,t=0;
+    const pf=setInterval(()=>{
+      t+=.04; op-=.03;
+      px+=vx*.04; py+=vy*.04+t*2.5;
+      p.setAttribute('x',px); p.setAttribute('y',py);
+      p.setAttribute('opacity',Math.max(0,op));
+      if(op<=0){clearInterval(pf);p.remove();}
+    },18);
+  }
+  /* shockwave */
+  const ring=$s('circle');
+  sa(ring,{cx,cy,r:8,fill:'none',stroke:cv('--orange'),'stroke-width':3,opacity:.9,filter:'url(#oglow)'});
+  svg.appendChild(ring);
+  let rr=8,rop=.9;
+  const rf=setInterval(()=>{ rr+=9; rop-=.06; ring.setAttribute('r',rr); ring.setAttribute('opacity',Math.max(0,rop)); if(rop<=0){clearInterval(rf);ring.remove();} },18);
+}
+
+/* ══════════════════════════════════════════════════
+   SELECT NODE
+══════════════════════════════════════════════════ */
+function selectNode(id){
+  if(!src){ src=id; setRV(`${id} → ...`); addLog(`> SRC: ${id}`,'orange'); doneTask(1); }
+  else if(!dst&&id!==src){ dst=id; setRV(`${src} → ${dst}`); addLog(`> DST: ${id}`,'orange'); doneTask(2); }
+  else { src=id; dst=null; setRV(`${id} → ...`); addLog(`> SRC: ${id}`,'orange'); }
+  draw();
+}
+
+/* ══════════════════════════════════════════════════
+   SEND PACKET
+══════════════════════════════════════════════════ */
+function sendPacket(){
+  if(!src||!dst){ addLog('> ERROR: select SRC & DST first','warn'); return; }
+
+  if(topo==='bus'){
+    dosSent++;
+    const inc=Math.max(2, DOS_INC - dosLoad/8);
+    dosLoad=Math.min(100, dosLoad+inc);
+    if(dosLoad>=DOS_WARN) dosColl++;
+    updateGauge(); resetDecayTimer();
+    if(dosLoad>=DOS_DEAD&&!dosDown){
+      dosDown=true; dosDrop++;
+      updateGauge(); draw(); updateStatus();
+      addLog('> 💥 NETWORK OVERLOAD — DoS COMPLETE','fail');
+      doneTask(3);
+      nodes.filter(n=>!n.type||n.type==='pc').forEach(n=>setTimeout(()=>flashNode(n.id,cv('--red')),Math.random()*380));
+      return;
+    }
+    if(dosLoad>=DOS_WARN){ addLog(`> COLLISION! Load: ${Math.round(dosLoad)}%`,'warn'); doneTask(3); }
+    else addLog(`> SENT. Load: ${Math.round(dosLoad)}%`,'ok');
+  }
+
+  const def=DEFS[topo];
+  const path=def.getPath(src,dst);
+  if(!path){
+    dosDrop++;
+    addLog(`> FAIL: ${src} → ${dst} — no route`,'fail');
+    if(topo==='ring')   addLog('> Ring severed.','fail');
+    else if(topo==='bus'){ addLog('> Network overloaded.','fail'); updateGauge(); }
+    else                  addLog('> Switch offline.','fail');
+    showXon(dst); doneTask(4); return;
+  }
+
+  if(mitm&&topo==='star'){
+    addLog(`> ${src} → [SWITCH captures] → ${dst}`,'mitm');
+    animPkt([src,'SW'],()=>{
+      addLog('> 🕵 PACKET INTERCEPTED',(mitm));
+      flashSW();
+      setTimeout(()=>animPkt(['SW',dst],()=>addLog(`> FORWARDED → ${dst}`,'mitm')),650);
+    },true);
+    return;
+  }
+  addLog(`> ${src} → ${dst}`,'ok');
+  animPkt(path,()=>{ addLog(`> DELIVERED ✓`,'ok'); doneTask(2); },false);
+}
+
+/* ══════════════════════════════════════════════════
+   ANIMATE PACKET
+══════════════════════════════════════════════════ */
+function animPkt(path, done, isMitm=false){
+  const svg=document.getElementById('msv');
+  const pts=path.map(id=>{ const n=getNode(id); return n?{x:n.x,y:n.y}:null; }).filter(Boolean);
+  if(pts.length<2){ done&&done(); return; }
+
+  const g=$s('g');
+  const pColor=isMitm?cv('--purple'):cv('--orange');
+  const c=$s('circle');
+  sa(c,{r:9,fill:pColor,filter:'url(#oglow)',opacity:.95});
+  /* trail */
+  const trail=$s('circle');
+  sa(trail,{r:13,fill:'none',stroke:pColor,'stroke-width':1.5,opacity:.3,filter:'url(#glow)'});
+  const lbl=$s('text');
+  sa(lbl,{x:0,y:0,'text-anchor':'middle','dominant-baseline':'middle','font-size':9,
+    fill:cv('--bg'),'font-family':'Share Tech Mono,monospace','font-weight':700});
+  lbl.textContent='PKT';
+  g.appendChild(trail); g.appendChild(c); g.appendChild(lbl);
+  g.setAttribute('transform',`translate(${pts[0].x},${pts[0].y})`);
+  svg.appendChild(g);
+
+  let seg=0;
+  const segMs=topo==='bus'?Math.max(65,300-dosLoad*2):320;
+  function step(){
+    if(seg>=pts.length-1){ g.remove(); flashNode(path[path.length-1],isMitm?cv('--purple'):cv('--green')); done&&done(); return; }
+    const from=pts[seg],to=pts[seg+1];
+    const t0=performance.now();
+    (function fr(now){
+      const t=Math.min((now-t0)/segMs,1);
+      const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+      g.setAttribute('transform',`translate(${from.x+(to.x-from.x)*e},${from.y+(to.y-from.y)*e})`);
+      if(t<1) requestAnimationFrame(fr); else{ seg++; step(); }
+    })(t0);
+  }
+  step();
+}
+
+function flashNode(id,color){
+  const svg=document.getElementById('msv');
+  const n=getNode(id); if(!n) return;
+  const c=$s('circle');
+  sa(c,{cx:n.x,cy:n.y,r:32,fill:color,opacity:.35,filter:'url(#glow)'});
+  svg.appendChild(c);
+  let op=.35; const f=setInterval(()=>{ op-=.04; c.setAttribute('opacity',Math.max(0,op)); if(op<=0){clearInterval(f);c.remove();} },35);
+}
+
+function flashSW(){
+  const svg=document.getElementById('msv');
+  const n=getNode('SW'); if(!n) return;
+  const r=$s('rect');
+  sa(r,{x:n.x-58,y:n.y-32,width:116,height:64,rx:4,fill:cv('--purple'),opacity:.22,filter:'url(#glow)'});
+  svg.appendChild(r);
+  let op=.22; const f=setInterval(()=>{ op-=.025; r.setAttribute('opacity',Math.max(0,op)); if(op<=0){clearInterval(f);r.remove();} },35);
+}
+
+function showXon(id){
+  const svg=document.getElementById('msv');
+  const n=getNode(id); if(!n) return;
+  const t=$s('text');
+  sa(t,{x:n.x,y:n.y-40,'text-anchor':'middle',fill:cv('--red'),'font-size':22,'font-weight':700,
+    'font-family':'Share Tech Mono,monospace',filter:'url(#rglow)','letter-spacing':'.1em'});
+  t.textContent='[ERR]'; svg.appendChild(t);
+  let op=1; const f=setInterval(()=>{ op-=.022; t.setAttribute('opacity',Math.max(0,op)); if(op<=0){clearInterval(f);t.remove();} },35);
+}
+
+/* ══════════════════════════════════════════════════
+   MITM
+══════════════════════════════════════════════════ */
+function toggleMitm(){
+  if(switchBroken) return;
+  mitm=!mitm;
+  const btn=document.getElementById('mitm-btn');
+  if(btn) btn.classList.toggle('mitm-on',mitm);
+  draw(); updateStatus();
+  addLog(mitm?'> 🕵 MitM ACTIVE — intercepting all traffic':'> MitM DISABLED',mitm?'mitm':'info');
+}
+
+/* ══════════════════════════════════════════════════
+   BUS DECAY
+══════════════════════════════════════════════════ */
+function startDecay(){
+  clearInterval(dosDecayTimer);
+  dosDecayTimer=setInterval(()=>{
+    if(topo!=='bus'||dosDown) return;
+    if(dosLoad>0){
+      dosLoad=Math.max(0,dosLoad-DOS_DECAY);
+      updateGauge(); updateStatus();
+      if(dosLoad===0) addLog('> LOAD CLEARED — NETWORK RECOVERED','ok');
+    }
+  },DOS_DECAY_MS);
+}
+function resetDecayTimer(){ clearInterval(dosDecayTimer); setTimeout(startDecay,900); }
+
+/* ══════════════════════════════════════════════════
+   GAUGE
+══════════════════════════════════════════════════ */
+function updateGauge(){
+  const arc=document.getElementById('garc');
+  const pct=document.getElementById('gpct');
+  const gs=document.getElementById('gstatus');
+  if(!arc) return;
+  const total=151;
+  arc.setAttribute('stroke-dashoffset',total-(dosLoad/100)*total);
+  const col=dosLoad>=DOS_CRIT?cv('--red'):dosLoad>=DOS_WARN?cv('--yellow'):cv('--green');
+  arc.setAttribute('stroke',col);
+  pct.textContent=Math.round(dosLoad)+'%';
+  pct.setAttribute('fill',cv('--orange'));
+  document.getElementById('gpkts').textContent=dosSent;
+  document.getElementById('gcoll').textContent=dosColl;
+  document.getElementById('gdrop').textContent=dosDrop;
+  if(dosDown||dosLoad>=DOS_DEAD){ gs.textContent='DEAD';     gs.className='gauge-status crit'; }
+  else if(dosLoad>=DOS_CRIT)    { gs.textContent='CRITICAL'; gs.className='gauge-status crit'; }
+  else if(dosLoad>=DOS_WARN)    { gs.textContent='WARNING';  gs.className='gauge-status warn'; }
+  else                          { gs.textContent='NORMAL';   gs.className='gauge-status'; }
+  setRV(dosDown?'[NETWORK DEAD]':`LOAD: ${Math.round(dosLoad)}%`);
+  updateStatus();
+}
+
+/* ══════════════════════════════════════════════════
+   STATUS
+══════════════════════════════════════════════════ */
+function updateStatus(){
+  const dot=document.getElementById('sdot');
+  const st=document.getElementById('stext');
+  const dead=dosDown||switchBroken||(topo==='ring'&&cutSet.size>0)||(topo==='bus'&&dosLoad>=DOS_DEAD);
+  const warn=dosLoad>=DOS_WARN&&dosLoad<DOS_DEAD;
+  if(dead)      { dot.className='sdot fail';   st.textContent='FAILURE'; }
+  else if(mitm) { dot.className='sdot purple'; st.textContent='COMPROMISED'; }
+  else if(warn) { dot.className='sdot warn';   st.textContent='DEGRADED'; }
+  else          { dot.className='sdot ok';     st.textContent='OPERATIONAL'; }
+}
+
+/* ══════════════════════════════════════════════════
+   RESET
+══════════════════════════════════════════════════ */
+function resetAll(){
+  clearInterval(dosDecayTimer); dosDecayTimer=null;
+  cutSet.clear(); src=null; dst=null;
+  mitm=false; switchBroken=false;
+  dosLoad=0; dosSent=0; dosColl=0; dosDrop=0; dosDown=false;
+  removeHammer(); removeHoverSc();
+  const mb=document.getElementById('mitm-btn'); if(mb) mb.classList.remove('mitm-on');
+  setRV('— select nodes —');
+  draw(); updateStatus();
+  if(topo==='bus'){ updateGauge(); startDecay(); }
+  addLog('> NETWORK RESET — ALL SYSTEMS RESTORED','orange');
+  doneTask(5);
+}
+
+/* ══════════════════════════════════════════════════
+   CLEANUP HELPERS
+══════════════════════════════════════════════════ */
+function removeHammer(){
+  const h=document.getElementById('hammer-ico');
+  if(h){ clearInterval(h._bob); h.remove(); }
+}
+function removeHoverSc(){
+  if(hoverScEl){ hoverScEl.remove(); hoverScEl=null; }
+  const o=document.getElementById('hsc'); if(o) o.remove();
+}
+
+/* ══════════════════════════════════════════════════
+   LOG
+══════════════════════════════════════════════════ */
+let lc=0;
+function addLog(msg,type='info'){
+  const el=document.getElementById('plog');
+  const now=new Date();
+  const ts=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  const d=document.createElement('div');
+  d.className=`le ${type}`; d.textContent=`[${ts}] ${msg}`;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+  if(++lc>130) el.removeChild(el.firstChild);
+}
+
+/* ══════════════════════════════════════════════════
+   TASKS
+══════════════════════════════════════════════════ */
+const taskDone=new Set();
+function doneTask(n){
+  if(taskDone.has(n)) return; taskDone.add(n);
+  const el=document.getElementById(`t${n}`);
+  if(el){ el.classList.remove('act'); el.classList.add('done'); }
+  const nx=document.getElementById(`t${n+1}`);
+  if(nx&&!taskDone.has(n+1)) nx.classList.add('act');
+}
+
+/* ══════════════════════════════════════════════════
+   TOOLTIP
+══════════════════════════════════════════════════ */
+function showTip(e,msg){
+  const t=document.getElementById('tip');
+  t.style.display='block'; t.textContent=msg;
+  const r=document.getElementById('svgwrap').getBoundingClientRect();
+  t.style.left=(e.clientX-r.left+16)+'px';
+  t.style.top=(e.clientY-r.top+16)+'px';
+}
+function hideTip(){ document.getElementById('tip').style.display='none'; }
+
+/* ══════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded',()=>{ loadTopo('star'); });
+window.addEventListener('resize',()=>draw());
+
+/* Re-draw when theme changes (colors need refresh) */
+const themeObserver=new MutationObserver(()=>draw());
+themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+</script>
+</body>
+</html>

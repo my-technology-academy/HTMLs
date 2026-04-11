@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud Academy — Course Structure</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg:     #070b12;
+  --bg2:    #0d1424;
+  --bg3:    #111c30;
+  --line:   #1a2640;
+  --faint:  #1a2e45;
+  --text:   #c9d6e8;
+  --muted:  #4a6080;
+  --gold:   #f0b429;
+  --green:  #2dd4a0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  min-height: 100vh;
+  padding: 40px 20px 80px;
+}
+
+/* ── PAGE HEADER ── */
+.page-header {
+  max-width: 1400px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-header h1 { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+.page-header p  { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+
+.stats-bar {
+  max-width: 1400px;
+  margin: 0 auto 28px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.stat {
+  padding: 7px 16px;
+  border-radius: 7px;
+  background: var(--bg2);
+  border: 1px solid var(--faint);
+  display: flex; align-items: center; gap: 9px;
+}
+.stat .sv { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 600; color: #fff; }
+.stat .sl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+/* ── ROOT ROW ── */
+.root-row {
+  max-width: 1400px;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  background: var(--bg2);
+  border: 1px solid #1e3050;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s;
+}
+.root-row:hover { background: var(--bg3); }
+.root-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg,#1a3a6a,#0e2040);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.root-title { font-size: 15px; font-weight: 700; color: #fff; flex: 1; }
+.root-sub   { font-size: 11px; color: var(--muted); }
+
+/* ── TRACKS ROW (horizontal) ── */
+.tracks-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: none; /* shown when root open */
+}
+.tracks-container.open { display: block; }
+
+.tracks-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) { .tracks-grid { grid-template-columns: repeat(3,1fr); } }
+@media (max-width: 700px)  { .tracks-grid { grid-template-columns: 1fr; } }
+
+/* ── TRACK COLUMN ── */
+.track-col { display: flex; flex-direction: column; gap: 0; }
+
+.track-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  user-select: none;
+  transition: filter .15s;
+  border: 1px solid transparent;
+}
+.track-header:hover { filter: brightness(1.1); }
+.track-pill { width: 4px; height: 24px; border-radius: 3px; flex-shrink: 0; }
+.track-label { font-weight: 600; font-size: 12px; flex: 1; line-height: 1.3; }
+.track-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: #0f1e35;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.track-body {
+  border: 1px solid var(--faint);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+  display: none;
+}
+.track-body.open { display: block; }
+
+/* ── CERT BLOCK ── */
+.cert-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--faint);
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s;
+}
+.cert-header:hover { background: var(--bg3); }
+.cert-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.cert-name  { font-size: 11.5px; font-weight: 500; flex: 1; color: var(--text); }
+.cert-body  { display: none; }
+.cert-body.open { display: block; }
+
+/* ── DOMAIN ROW ── */
+.domain-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  user-select: none;
+  background: #080f1c;
+  transition: background .15s;
+}
+.domain-row:hover { background: #0c1828; }
+.domain-num  { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); width: 16px; flex-shrink: 0; }
+.domain-name { font-size: 11.5px; color: #8ba8cc; flex: 1; line-height: 1.35; }
+.domain-pct  { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--gold); flex-shrink: 0; }
+
+/* ── DOMAIN CHILDREN (leaves) ── */
+.domain-children { display: none; }
+.domain-children.open { display: block; }
+
+.leaf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 32px;
+  border-bottom: 1px solid var(--line);
+  background: #060c16;
+  font-size: 11px;
+  color: var(--muted);
+  transition: color .15s;
+  cursor: default;
+}
+.leaf-row:hover { color: var(--text); }
+.leaf-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--faint);
+  flex-shrink: 0;
+}
+.leaf-icon { font-size: 12px; flex-shrink: 0; }
+
+/* ── MILESTONE ROW — same as domain-row, same color, arrow, clickable ── */
+.milestone-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--line);
+  background: #080f1c;
+  transition: background .15s;
+  cursor: pointer;
+}
+.milestone-row:hover { background: #0c1828; }
+.milestone-row:last-child { border-bottom: none; }
+.milestone-name { font-size: 11.5px; color: #8ba8cc; flex: 1; }
+.milestone-icon { font-size: 12px; flex-shrink: 0; }
+.milestone-children { display: none; }
+.milestone-children.open { display: block; }
+
+/* ── CHEVRON ── */
+.chv {
+  width: 14px; height: 14px;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform .2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.chv svg { width: 8px; height: 8px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.open-chv .chv { transform: rotate(90deg); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <h1>Cloud Academy</h1>
+    <p>Course Structure &amp; Full Syllabus</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button onclick="toggleAll(true)"  style="padding:6px 14px;border-radius:6px;border:1px solid #1a2640;background:#0d1424;color:#4a6080;font-size:11px;font-family:Inter,sans-serif;cursor:pointer;">Expand All</button>
+    <button onclick="toggleAll(false)" style="padding:6px 14px;border-radius:6px;border:1px solid #1a2640;background:#0d1424;color:#4a6080;font-size:11px;font-family:Inter,sans-serif;cursor:pointer;">Collapse All</button>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><span class="sv">5</span><span class="sl">Tracks</span></div>
+  <div class="stat"><span class="sv">13</span><span class="sl">Certifications</span></div>
+  <div class="stat"><span class="sv">47</span><span class="sl">Domains</span></div>
+  <div class="stat"><span class="sv">6</span><span class="sl">Items / Domain</span></div>
+</div>
+
+<div id="app"></div>
+
+<script>
+const CHV = `<svg viewBox="0 0 8 14"><polyline points="1,1 7,7 1,13"/></svg>`;
+
+const TRACKS = [
+  { color:'#3b9eff', name:'Azure Cloud Engineer', badge:'6M', certs:[
+    { code:'AZ-900', name:'Azure Fundamentals', domains:[
+      {n:'Describe Cloud Concepts',pct:'25–30%'},
+      {n:'Describe Azure Architecture & Services',pct:'35–40%'},
+      {n:'Describe Azure Management & Governance',pct:'30–35%'},
+    ]},
+    { code:'AZ-104', name:'Azure Administrator', domains:[
+      {n:'Manage Azure Identities & Governance',pct:'20–25%'},
+      {n:'Implement and Manage Storage',pct:'15–20%'},
+      {n:'Deploy and Manage Compute Resources',pct:'20–25%'},
+      {n:'Implement and Manage Virtual Networking',pct:'15–20%'},
+      {n:'Monitor and Maintain Azure Resources',pct:'10–15%'},
+    ]},
+    { code:'AZ-305', name:'Azure Infrastructure Solutions', domains:[
+      {n:'Design Identity, Governance & Monitoring',pct:'25–30%'},
+      {n:'Design Data Storage Solutions',pct:'20–25%'},
+      {n:'Design Business Continuity Solutions',pct:'15–20%'},
+      {n:'Design Infrastructure Solutions',pct:'30–35%'},
+    ]},
+    { code:'AZ-500', name:'Azure Security Engineer', domains:[
+      {n:'Secure Identity and Access',pct:'15–20%'},
+      {n:'Secure Networking',pct:'20–25%'},
+      {n:'Secure Compute, Storage & Databases',pct:'20–25%'},
+      {n:'Secure Azure Using Defender & Sentinel',pct:'30–35%'},
+    ]},
+  ]},
+  { color:'#ff9a3c', name:'AWS Cloud Architect', badge:'6M', certs:[
+    { code:'CLF-C02', name:'Cloud Practitioner', domains:[
+      {n:'Cloud Concepts',pct:'24%'},
+      {n:'Security and Compliance',pct:'30%'},
+      {n:'Cloud Technology and Services',pct:'34%'},
+      {n:'Billing, Pricing, and Support',pct:'12%'},
+    ]},
+    { code:'SAA-C03', name:'Solutions Architect Associate', domains:[
+      {n:'Design Secure Architectures',pct:'30%'},
+      {n:'Design Resilient Architectures',pct:'26%'},
+      {n:'Design High-Performing Architectures',pct:'24%'},
+      {n:'Design Cost-Optimized Architectures',pct:'20%'},
+    ]},
+    { code:'SAP-C02', name:'Solutions Architect Professional', domains:[
+      {n:'Design for Organizational Complexity',pct:'26%'},
+      {n:'Design for New Solutions',pct:'29%'},
+      {n:'Continuous Improvement',pct:'25%'},
+      {n:'Workload Migration & Modernization',pct:'20%'},
+    ]},
+    { code:'SCS-C02', name:'Security Specialty', domains:[
+      {n:'Threat Detection & Incident Response',pct:'14%'},
+      {n:'Security Logging and Monitoring',pct:'18%'},
+      {n:'Infrastructure Security',pct:'20%'},
+      {n:'Identity and Access Management',pct:'16%'},
+      {n:'Data Protection',pct:'18%'},
+      {n:'Security Governance',pct:'14%'},
+    ]},
+  ]},
+  { color:'#b085f5', name:'AWS AI & Data Engineering', badge:'6M', certs:[
+    { code:'CLF-C02', name:'Cloud Practitioner', domains:[
+      {n:'Cloud Concepts',pct:'24%'},
+      {n:'Security and Compliance',pct:'30%'},
+      {n:'Cloud Technology and Services',pct:'34%'},
+      {n:'Billing, Pricing, and Support',pct:'12%'},
+    ]},
+    { code:'DEA-C01', name:'Data Engineer Associate', domains:[
+      {n:'Data Ingestion and Transformation',pct:'34%'},
+      {n:'Data Store Management',pct:'26%'},
+      {n:'Data Operations and Support',pct:'22%'},
+      {n:'Data Security and Governance',pct:'18%'},
+    ]},
+    { code:'MLS-C01', name:'Machine Learning Specialty', domains:[
+      {n:'Data Engineering',pct:'20%'},
+      {n:'Exploratory Data Analysis',pct:'24%'},
+      {n:'Modeling',pct:'36%'},
+      {n:'ML Implementation & Operations',pct:'20%'},
+    ]},
+    { code:'AIF-C01', name:'AI Practitioner', domains:[
+      {n:'Fundamentals of AI and ML',pct:'20%'},
+      {n:'Fundamentals of Generative AI',pct:'24%'},
+      {n:'Applications of Foundation Models',pct:'28%'},
+      {n:'Guidelines for Responsible AI',pct:'14%'},
+      {n:'Security, Compliance & Governance for AI',pct:'14%'},
+    ]},
+  ]},
+  { color:'#f05a6e', name:'AWS Security', badge:'5M', certs:[
+    { code:'CLF-C02', name:'Cloud Practitioner', domains:[
+      {n:'Cloud Concepts',pct:'24%'},
+      {n:'Security and Compliance',pct:'30%'},
+      {n:'Cloud Technology and Services',pct:'34%'},
+      {n:'Billing, Pricing, and Support',pct:'12%'},
+    ]},
+    { code:'SAA-C03', name:'Solutions Architect Associate', domains:[
+      {n:'Design Secure Architectures',pct:'30%'},
+      {n:'Design Resilient Architectures',pct:'26%'},
+      {n:'Design High-Performing Architectures',pct:'24%'},
+      {n:'Design Cost-Optimized Architectures',pct:'20%'},
+    ]},
+    { code:'SCS-C02', name:'Security Specialty', domains:[
+      {n:'Threat Detection & Incident Response',pct:'14%'},
+      {n:'Security Logging and Monitoring',pct:'18%'},
+      {n:'Infrastructure Security',pct:'20%'},
+      {n:'Identity and Access Management',pct:'16%'},
+      {n:'Data Protection',pct:'18%'},
+      {n:'Security Governance',pct:'14%'},
+    ]},
+  ]},
+  { color:'#34c772', name:'Google Cloud Professional', badge:'6M', certs:[
+    { code:'CDL', name:'Cloud Digital Leader', domains:[
+      {n:'Digital Transformation with GCP',pct:'~17%'},
+      {n:'Data Transformation with GCP',pct:'~17%'},
+      {n:'Innovating with Google Cloud AI',pct:'~16%'},
+      {n:'Modernizing Infrastructure & Apps',pct:'~17%'},
+      {n:'Trust and Security with GCP',pct:'~17%'},
+      {n:'Scaling with GCP Operations',pct:'~16%'},
+    ]},
+    { code:'ACE', name:'Associate Cloud Engineer', domains:[
+      {n:'Setting Up a Cloud Solution Environment',pct:'17.5%'},
+      {n:'Planning and Configuring a Cloud Solution',pct:'17.5%'},
+      {n:'Deploying and Implementing a Cloud Solution',pct:'25%'},
+      {n:'Ensuring Successful Operation',pct:'20%'},
+      {n:'Configuring Access and Security',pct:'20%'},
+    ]},
+    { code:'PCA', name:'Professional Cloud Architect', domains:[
+      {n:'Designing & Planning Cloud Architecture',pct:'~22%'},
+      {n:'Managing & Provisioning Infrastructure',pct:'~18%'},
+      {n:'Designing for Security & Compliance',pct:'~18%'},
+      {n:'Analyzing & Optimizing Processes',pct:'~18%'},
+      {n:'Managing Implementation',pct:'~12%'},
+      {n:'Ensuring Solution Reliability',pct:'~12%'},
+    ]},
+  ]},
+];
+
+const LEAVES = [
+  {icon:'🖼️', l:'Slides'},
+  {icon:'⚙️',  l:'PBQ'},
+  {icon:'🃏',  l:'Flash Cards'},
+  {icon:'📄',  l:'Cheat Sheet'},
+  {icon:'📝',  l:'Summary'},
+  {icon:'✅',  l:'Quiz'},
+];
+
+const MILESTONES = [
+  {icon:'📋', l:'Mock Exams'},
+  {icon:'🧪', l:'Labs'},
+  {icon:'💬', l:'Feedback Form'},
+  {icon:'🏆', l:'Certification'},
+];
+
+let uid = 0;
+function id() { return 'n'+(++uid); }
+
+function el(tag, cls, attrs) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (attrs) Object.assign(e, attrs);
+  return e;
+}
+
+function chvEl() {
+  const s = el('span','chv'); s.innerHTML = CHV; return s;
+}
+
+function addToggle(trigger, target, extraCls) {
+  trigger.addEventListener('click', () => {
+    const open = target.classList.toggle('open');
+    if (extraCls) trigger.classList.toggle('open-chv', open);
+    // rotate chevron
+    const c = trigger.querySelector('.chv');
+    if (c) c.style.transform = open ? 'rotate(90deg)' : '';
+  });
+}
+
+/* ── LEAVES under a domain ── */
+function buildLeaves() {
+  const wrap = el('div','domain-children');
+  LEAVES.forEach(x => {
+    const row = el('div','leaf-row');
+    const dot = el('span','leaf-dot');
+    const icon = el('span','leaf-icon'); icon.textContent = x.icon;
+    const txt = document.createTextNode(x.l);
+    row.appendChild(dot);
+    row.appendChild(icon);
+    row.appendChild(txt);
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+
+/* ── DOMAIN ROW ── */
+function buildDomain(d, i) {
+  const frag = document.createDocumentFragment();
+
+  const row = el('div','domain-row');
+  const num  = el('span','domain-num');  num.textContent  = String(i+1).padStart(2,'0');
+  const name = el('span','domain-name'); name.textContent = d.n;
+  const pct  = el('span','domain-pct');  pct.textContent  = d.pct;
+  const cv = chvEl();
+  row.appendChild(num); row.appendChild(name); row.appendChild(pct); row.appendChild(cv);
+
+  const leaves = buildLeaves();
+  addToggle(row, leaves, false);
+  // manual chevron handle
+  row.addEventListener('click', () => {
+    cv.style.transform = leaves.classList.contains('open') ? 'rotate(90deg)' : '';
+  });
+
+  frag.appendChild(row);
+  frag.appendChild(leaves);
+  return frag;
+}
+
+/* ── MILESTONE ROWS (same as domain rows: icon + name + chevron, collapsible) ── */
+function buildMilestones() {
+  const frag = document.createDocumentFragment();
+  const sep = el('div');
+  sep.style.cssText = 'border-top:1px dashed #1a2e45;';
+  frag.appendChild(sep);
+  MILESTONES.forEach(x => {
+    const wrap = el('div');
+
+    const row = el('div','milestone-row');
+    const icon = el('span','milestone-icon'); icon.textContent = x.icon;
+    const name = el('span','milestone-name'); name.textContent = x.l;
+    const cv = chvEl();
+    row.appendChild(icon);
+    row.appendChild(name);
+    row.appendChild(cv);
+
+    const children = el('div','milestone-children');
+    // empty expandable for now — placeholder rows
+    [1,2,3].forEach(n => {
+      const ph = el('div','leaf-row');
+      ph.innerHTML = `<span class="leaf-dot"></span><span style="color:#2a3f60;font-size:10px;font-style:italic">Content coming soon...</span>`;
+      children.appendChild(ph);
+    });
+
+    row.addEventListener('click', () => {
+      const open = children.classList.toggle('open');
+      cv.style.transform = open ? 'rotate(90deg)' : '';
+    });
+
+    wrap.appendChild(row);
+    wrap.appendChild(children);
+    frag.appendChild(wrap);
+  });
+  return frag;
+}
+
+/* ── CERT ── */
+function buildCert(cert, color) {
+  const wrap = el('div');
+
+  const hdr = el('div','cert-header');
+  const cbox = el('span','cert-code');
+  cbox.style.cssText = `background:${color}18;color:${color};border:1px solid ${color}38`;
+  cbox.textContent = cert.code;
+  const cname = el('span','cert-name'); cname.textContent = cert.name;
+  const cv = chvEl();
+  hdr.appendChild(cbox); hdr.appendChild(cname); hdr.appendChild(cv);
+
+  const body = el('div','cert-body');
+  cert.domains.forEach((d,i) => body.appendChild(buildDomain(d,i)));
+  body.appendChild(buildMilestones());
+
+  hdr.addEventListener('click', () => {
+    const open = body.classList.toggle('open');
+    cv.style.transform = open ? 'rotate(90deg)' : '';
+  });
+
+  wrap.appendChild(hdr);
+  wrap.appendChild(body);
+  return wrap;
+}
+
+/* ── TRACK COLUMN ── */
+function buildTrack(t) {
+  const col = el('div','track-col');
+
+  const hdr = el('div','track-header');
+  hdr.style.cssText = `background:${t.color}12;border:1px solid ${t.color}30`;
+  const pill = el('span','track-pill'); pill.style.background = t.color;
+  const label = el('span','track-label'); label.style.color = t.color; label.textContent = t.name;
+  const badge = el('span','track-badge'); badge.textContent = t.badge;
+  const cv = chvEl();
+  hdr.appendChild(pill); hdr.appendChild(label); hdr.appendChild(badge); hdr.appendChild(cv);
+
+  const body = el('div','track-body');
+  t.certs.forEach(c => body.appendChild(buildCert(c, t.color)));
+
+  hdr.addEventListener('click', () => {
+    const open = body.classList.toggle('open');
+    cv.style.transform = open ? 'rotate(90deg)' : '';
+  });
+
+  col.appendChild(hdr);
+  col.appendChild(body);
+  return col;
+}
+
+/* ── ROOT ── */
+function buildRoot() {
+  const app = document.getElementById('app');
+
+  // Root row
+  const rootRow = el('div','root-row');
+  rootRow.innerHTML = `<div class="root-icon">☁️</div>
+    <div style="flex:1"><div class="root-title">Cloud Academy</div>
+    <div class="root-sub">5 Tracks · 13 Certifications · Full Course Structure</div></div>`;
+  const cv = chvEl(); cv.style.transform = 'rotate(90deg)'; rootRow.appendChild(cv);
+
+  // Tracks container
+  const tracksWrap = el('div','tracks-container open');
+  const grid = el('div','tracks-grid');
+  TRACKS.forEach(t => grid.appendChild(buildTrack(t)));
+  tracksWrap.appendChild(grid);
+
+  rootRow.addEventListener('click', () => {
+    const open = tracksWrap.classList.toggle('open');
+    cv.style.transform = open ? 'rotate(90deg)' : '';
+  });
+
+  app.appendChild(rootRow);
+  app.appendChild(tracksWrap);
+}
+
+function toggleAll(open) {
+  // track bodies
+  document.querySelectorAll('.track-body').forEach(b => {
+    b.classList.toggle('open', open);
+    const cv = b.previousElementSibling?.querySelector('.chv');
+    if (cv) cv.style.transform = open ? 'rotate(90deg)' : '';
+  });
+  // cert bodies
+  document.querySelectorAll('.cert-body').forEach(b => {
+    b.classList.toggle('open', open);
+    const cv = b.previousElementSibling?.querySelector('.chv');
+    if (cv) cv.style.transform = open ? 'rotate(90deg)' : '';
+  });
+  // domain children
+  document.querySelectorAll('.domain-children').forEach(b => {
+    b.classList.toggle('open', open);
+    const cv = b.previousElementSibling?.querySelector('.chv');
+    if (cv) cv.style.transform = open ? 'rotate(90deg)' : '';
+  });
+  // tracks container
+  document.querySelector('.tracks-container').classList.toggle('open', open);
+}
+
+buildRoot();
+</script>
+</body>
+</html>

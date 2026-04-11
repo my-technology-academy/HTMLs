@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Flashcards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --accent:#ff7b00;
+  --bg-light:#f4f4f7;
+  --bg-dark:#0A0E17;
+  --text-dark:#121212;
+  --text-light:#ffffff;
+  --card-light:#ffffff;
+  --card-dark:#0f0f12;
+}
+
+/* Default = Light */ 
+body{
+  margin:0;
+  font-family:"Inter",sans-serif;
+  background:var(--bg-light);
+  color:var(--text-dark);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  overflow:hidden;
+  transition:.35s;
+}
+
+/* Theme Toggle Button */
+.theme-toggle{
+  position:fixed;
+  top:18px;
+  left:22px;
+  border:2px solid var(--accent);
+  color:var(--accent);
+  padding:10px 20px;
+  border-radius:14px;
+  background:transparent;
+  cursor:pointer;
+  transition:.3s;
+}
+
+/* Flashcard */
+.card{
+  width:85vw;
+  max-width:950px;
+  height:350px;
+  background:var(--card-light);
+  border-radius:28px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  cursor:pointer;
+  perspective:1400px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0px 25px 60px rgba(0,0,0,0.2);
+}
+
+.inner{
+  width:100%;
+  height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform .55s cubic-bezier(.22,.61,.36,1);
+}
+
+.card.flipped .inner{
+  transform:rotateY(180deg);
+}
+
+.side{
+  position:absolute;
+  inset:0;
+  backface-visibility:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:35px;
+  text-align:center;
+  font-size: clamp(18px,2.3vw,28px);
+  line-height:1.4;
+  transition:.25s;
+}
+
+.front{ transform:rotateY(0deg); }
+.back{ transform:rotateY(180deg); color:var(--accent); font-weight:bold; }
+
+/* FIX: hide inactive face */
+.card:not(.flipped) .back{ opacity:0; pointer-events:none; }
+.card.flipped .front{ opacity:0; pointer-events:none; }
+
+/* Controls */
+.controls{
+  margin-top:32px;
+  display:flex;
+  gap:24px;
+  justify-content:center;
+}
+
+.ctrl-btn{
+  background:transparent;
+  border:none;
+  font-size:28px;
+  cursor:pointer;
+  color:var(--accent);
+  padding:10px 30px;
+  border-radius:12px;
+  transition:.25s;
+}
+
+.ctrl-btn:hover{
+  background:rgba(255,123,0,0.15);
+  transform:scale(1.18);
+}
+
+.ctrl-btn:disabled{
+  opacity:.25;
+  cursor:not-allowed;
+}
+
+.counter{
+  opacity:.65;
+  font-size:14px;
+  width:80px;
+  text-align:center;
+}
+
+/* ======================
+   DARK THEME FIX
+   ====================== */
+body.dark{
+  background:var(--bg-dark);
+  color:var(--text-light);
+}
+
+body.dark .card{
+  background:var(--card-dark);
+  color:var(--text-light);
+  box-shadow:0px 25px 60px rgba(255,255,255,0.05);
+}
+
+body.dark .back{
+  color:var(--accent);
+}
+
+body.dark .ctrl-btn{
+  color:var(--accent);
+}
+
+body.dark .ctrl-btn:hover{
+  background:rgba(255,123,0,0.25);
+}
+</style>
+</head>
+
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+
+<div>
+  <div class="card" id="card" onclick="flipCard()">
+    <div class="inner">
+      <div class="side front" id="front"></div>
+      <div class="side back" id="back"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn" onclick="prevCard()" id="prevBtn">⬅</button>
+    <span class="counter" id="progress"></span>
+    <button class="ctrl-btn" onclick="nextCard()" id="nextBtn">➡</button>
+  </div>
+</div>
+
+<script>
+/* ------- Flashcards Content Here (CC Full Domains) -------- */
+const flashcards = [
+  {q:"What are the three components of the CIA Triad?", a:"Confidentiality, Integrity, and Availability."},
+  {q:"What is the purpose of Confidentiality?", a:"To ensure that only authorized individuals can access specific information."},
+  {q:"What is Integrity in cybersecurity?", a:"Ensuring that data remains accurate, trustworthy, and unaltered without authorization."},
+  {q:"What is Availability?", a:"Ensuring that systems and data are accessible when needed."},
+  {q:"What are the three stages of the Risk Management Process?", a:"Identify Risk, Assess Risk, and Treat Risk."},
+  {q:"What are the four risk treatment options?", a:"Accept, Avoid, Reduce, or Transfer the risk."},
+  {q:"What are the three types of security controls?", a:"Physical controls, Technical controls, and Administrative controls."},
+  {q:"What is the purpose of governance in an organization?", a:"To ensure activities align with regulations, policies, and business objectives in a structured and consistent manner."},
+  {q:"What defines an Incident in cybersecurity?", a:"An event that compromises the confidentiality, integrity, or availability of a system."},
+  {q:"What are the main phases of the Incident Response process?", a:"Preparation; Detection and Analysis; Containment, Eradication and Recovery; Post-Incident Activity."},
+  {q:"What is the objective of Business Continuity (BC)?", a:"To maintain critical business operations during and after a disruption."},
+  {q:"What is the objective of Disaster Recovery (DR)?", a:"To restore IT systems and infrastructure after a major disruption."},
+  {q:"What does RTO represent?", a:"Recovery Time Objective – the maximum acceptable downtime."},
+  {q:"What does RPO represent?", a:"Recovery Point Objective – the maximum acceptable amount of data loss measured in time."},
+  {q:"What are the three elements of Access Control?", a:"Subjects (who), Objects (what), and Rules (how and when)."},
+
+  {q:"What is the principle of Least Privilege?", a:"Granting users only the minimum level of access required to perform their job."},
+  {q:"What is Role-Based Access Control (RBAC)?", a:"An access control model where permissions are assigned based on job roles."},
+  {q:"What is Mandatory Access Control (MAC)?", a:"An access control model where access is determined by system-enforced security labels and clearances."},
+  {q:"What is Discretionary Access Control (DAC)?", a:"An access control model where the resource owner decides who can access the resource."},
+  {q:"What is a Denial of Service (DoS) attack?", a:"An attack that attempts to make a system or service unavailable by overwhelming it with traffic."},
+  {q:"What is a Distributed Denial of Service (DDoS) attack?", a:"A DoS attack launched from multiple compromised systems, often forming a botnet."},
+  {q:"What is DNS Spoofing?", a:"Redirecting legitimate user requests to malicious IP addresses by falsifying DNS records."},
+  {q:"What is a Man-in-the-Middle (MITM) attack?", a:"An attack where communication between two parties is intercepted and possibly altered without their knowledge."},
+  {q:"What is the difference between IDS and IPS?", a:"IDS detects and alerts on suspicious activity, while IPS detects and actively blocks or prevents malicious traffic."},
+  {q:"What is Network Segmentation?", a:"Dividing a network into smaller segments to limit lateral movement and improve security."},
+  {q:"What is Defense in Depth?", a:"A layered security approach that uses multiple controls to reduce single points of failure."},
+  {q:"What is hashing primarily used for?", a:"Ensuring data integrity by generating a fixed-length, one-way hash value."},
+  {q:"What is symmetric encryption?", a:"Encryption that uses the same key for both encryption and decryption."},
+  {q:"What is asymmetric encryption?", a:"Encryption that uses a public key for encryption and a private key for decryption."},
+  {q:"What is a SIEM system?", a:"A system that collects, correlates, and analyzes security logs and events across an organization."},
+  {q:"What is configuration management?", a:"The process of maintaining systems in a secure, consistent, and auditable state."},
+  {q:"What is the purpose of a Change Management Policy?", a:"To ensure system changes are controlled, approved, tested, and documented to avoid business disruption."},
+  {q:"What is the purpose of Security Awareness Training?", a:"To educate employees about common threats and reduce human-related security risks."}
+];
+
+let index=0, flipped=false;
+
+function updateCard(){
+  front.innerHTML=flashcards[index].q;
+  back.innerHTML=flashcards[index].a;
+  progress.textContent=`${index+1}/${flashcards.length}`;
+  prevBtn.disabled=index===0;
+  nextBtn.disabled=index===flashcards.length-1;
+  card.classList.remove("flipped");
+  flipped=false;
+}
+
+function flipCard(){ flipped=!flipped; card.classList.toggle("flipped",flipped); }
+
+function nextCard(){ if(index<flashcards.length-1) index++; updateCard(); }
+
+function prevCard(){ if(index>0) index--; updateCard(); }
+
+function toggleTheme(){ document.body.classList.toggle("dark"); }
+
+updateCard();
+</script>
+</body>
+</html>

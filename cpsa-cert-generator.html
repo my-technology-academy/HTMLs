@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security+ Certificate – My Cyber Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: #111;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* ======= FORM ======= */
+.form-container {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 44px 40px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+}
+
+.logo-row { display:flex; align-items:center; gap:6px; justify-content:center; margin-bottom:4px; }
+.l-cyber { font-weight:800; font-size:20px; letter-spacing:5px; color:#E8500A; }
+.l-academy { font-weight:400; font-size:20px; letter-spacing:5px; color:#fff; }
+.form-tagline { font-size:11px; color:#555; margin-bottom:32px; letter-spacing:0.5px; }
+.form-heading { font-size:12px; color:#888; letter-spacing:2px; text-transform:uppercase; margin-bottom:28px; }
+
+.input-group { margin-bottom:18px; text-align:left; }
+label { display:block; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#555; margin-bottom:7px; }
+input {
+  width:100%; padding:12px 16px;
+  background:#111; border:1px solid #2a2a2a; border-radius:6px;
+  color:#fff; font-family:'Montserrat',sans-serif; font-size:14px; outline:none;
+  transition:border-color 0.2s;
+}
+input:focus { border-color:#E8500A; }
+
+.btn {
+  width:100%; padding:13px; background:#E8500A; border:none; border-radius:6px;
+  color:white; font-family:'Montserrat',sans-serif; font-weight:700; font-size:12px;
+  letter-spacing:3px; text-transform:uppercase; cursor:pointer; margin-top:6px;
+  transition:background 0.2s;
+}
+.btn:hover { background:#ff6820; }
+
+/* ======= CERT WRAPPER ======= */
+#certificate-wrapper { display:none; width:100%; max-width:860px; }
+
+.cert-actions {
+  text-align:center; margin-bottom:14px;
+  display:flex; justify-content:center; gap:10px;
+}
+.cert-actions button {
+  background:transparent; border:1px solid #444; color:#ccc;
+  padding:9px 24px; font-family:'Montserrat',sans-serif;
+  font-size:11px; letter-spacing:2px; text-transform:uppercase;
+  cursor:pointer; border-radius:6px; transition:all 0.2s;
+}
+.cert-actions button:hover { border-color:#E8500A; color:#fff; }
+.cert-actions button.primary { background:#E8500A; border-color:#E8500A; color:#fff; }
+.cert-actions button.primary:hover { background:#ff6820; }
+
+/* ======= CERTIFICATE ======= */
+.certificate {
+  width: 100%;
+  background: #181818;
+  border-radius: 14px;
+  padding: 44px 52px 36px;
+  position: relative;
+  overflow: hidden;
+}
+
+.certificate::before {
+  content:'';
+  position:absolute;
+  top:-60px; right:-60px;
+  width:260px; height:260px;
+  background:radial-gradient(circle, rgba(232,80,10,0.09) 0%, transparent 70%);
+  pointer-events:none;
+}
+
+.c-top-rule {
+  position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, #E8500A 0%, #ff9060 40%, transparent 100%);
+  border-radius:14px 14px 0 0;
+}
+
+.c-logo-row { display:flex; align-items:center; gap:6px; margin-bottom:2px; }
+.c-cyber { font-weight:800; font-size:14px; letter-spacing:4px; color:#E8500A; }
+.c-acad { font-weight:400; font-size:14px; letter-spacing:4px; color:#ccc; }
+.c-coaching { font-size:11px; color:#555; margin-bottom:18px; }
+
+.c-title {
+  font-weight:900; font-size:40px; line-height:1.1;
+  color:#E8500A; text-transform:uppercase; letter-spacing:1px; margin-bottom:20px;
+}
+
+.c-rule { width:100%; height:1px; background:#2a2a2a; margin-bottom:22px; }
+
+.c-name {
+  font-weight:800; font-size:34px; color:#fff;
+  letter-spacing:0.5px; margin-bottom:10px;
+}
+
+.c-completed { font-size:14px; color:#888; margin-bottom:6px; font-weight:400; }
+.c-completed span { color:#bbb; font-weight:600; }
+
+.c-course-line {
+  font-size:14px; color:#888; margin-bottom:18px; font-weight:400;
+}
+.c-course-line span { color:#bbb; font-weight:600; }
+
+.c-bottom-row {
+  display:flex; align-items:center;
+  justify-content:space-between; margin-bottom:22px;
+}
+.c-awarded { font-size:13px; font-weight:700; color:#00cc66; letter-spacing:0.3px; }
+.c-score {
+  border:1px solid #E8500A; border-radius:6px; padding:8px 18px;
+  font-size:13px; font-weight:700; color:#fff; letter-spacing:1px;
+  display:flex; align-items:center; gap:6px;
+}
+.c-score-dot { color:#E8500A; font-size:16px; }
+
+.c-footer-rule { width:100%; height:1px; background:#2a2a2a; margin-bottom:13px; }
+.c-disclaimer { font-size:11px; color:#444; line-height:1.5; }
+
+/* loading */
+#loading-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.8);
+  align-items:center; justify-content:center;
+  z-index:1000; flex-direction:column; gap:16px;
+}
+#loading-overlay.show { display:flex; }
+.spinner {
+  width:40px; height:40px; border:3px solid #333;
+  border-top-color:#E8500A; border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+#loading-overlay p { color:#888; font-size:13px; letter-spacing:2px; text-transform:uppercase; }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p>Generating PNG...</p>
+</div>
+
+<!-- FORM -->
+<div class="form-container" id="form-section">
+  <div class="logo-row">
+    <span class="l-cyber">CYBER</span>
+    <span class="l-academy">ACADEMY</span>
+  </div>
+  <div class="form-tagline">Coaching &amp; Mentoring</div>
+  <div class="form-heading">Generate Your Certificate</div>
+
+  <div class="input-group">
+    <label>Full Name</label>
+    <input type="text" id="student-name" placeholder="Enter your full name..." autocomplete="off" />
+  </div>
+
+  <button class="btn" onclick="generateCertificate()">Generate Certificate</button>
+</div>
+
+<!-- CERTIFICATE -->
+<div id="certificate-wrapper">
+  <div class="cert-actions">
+    <button class="primary" onclick="downloadPNG()">⬇ Download PNG</button>
+    <button onclick="goBack()">← Back</button>
+  </div>
+
+  <div class="certificate" id="certificate">
+    <div class="c-top-rule"></div>
+
+    <div class="c-logo-row">
+      <span class="c-cyber">CYBER</span>
+      <span class="c-acad">ACADEMY</span>
+    </div>
+    <div class="c-coaching">Coaching &amp; Mentoring</div>
+
+    <div class="c-title">Certificate<br>of Achievement</div>
+
+    <div class="c-rule"></div>
+
+    <div class="c-name" id="cert-name-display">Name</div>
+
+    <div class="c-completed">has successfully completed the</div>
+    <div class="c-course-line">
+      <span>CREST Practitioner Security Analyst (CPSA) Training</span> from <span>My Cyber Academy</span>
+    </div>
+
+    <div class="c-bottom-row">
+      <div class="c-awarded" id="cert-date-display">Awarded on —</div>
+      <div class="c-score">Score: 100% <span class="c-score-dot">•</span> PASS</div>
+    </div>
+
+    <div class="c-footer-rule"></div>
+
+    <div class="c-disclaimer">
+      This certificate reflects your overall result. It is honorary and not an official score report.
+    </div>
+  </div>
+</div>
+
+<script>
+function generateCertificate() {
+  const name = document.getElementById('student-name').value.trim();
+  if (!name) { alert('Please enter your full name.'); return; }
+
+  document.getElementById('cert-name-display').textContent = name;
+
+  const now = new Date();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  const y = now.getFullYear();
+  document.getElementById('cert-date-display').textContent = `Awarded on ${m}/${d}/${y}`;
+
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('certificate-wrapper').style.display = 'block';
+}
+
+function downloadPNG() {
+  const overlay = document.getElementById('loading-overlay');
+  overlay.classList.add('show');
+
+  const cert = document.getElementById('certificate');
+
+  // Wait a tick for fonts/layout
+  setTimeout(() => {
+    html2canvas(cert, {
+      scale: 3,
+      useCORS: true,
+      backgroundColor: '#181818',
+      logging: false
+    }).then(canvas => {
+      overlay.classList.remove('show');
+      const link = document.createElement('a');
+      const name = document.getElementById('cert-name-display').textContent.replace(/\s+/g,'_');
+      link.download = `Certificate_${name}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }).catch(() => {
+      overlay.classList.remove('show');
+      alert('Something went wrong. Please try again.');
+    });
+  }, 200);
+}
+
+function goBack() {
+  document.getElementById('form-section').style.display = 'block';
+  document.getElementById('certificate-wrapper').style.display = 'none';
+}
+</script>
+</body>
+</html>

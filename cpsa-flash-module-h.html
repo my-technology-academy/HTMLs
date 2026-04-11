@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Flashcards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --accent:#ff7b00;
+  --bg-light:#f4f4f7;
+  --bg-dark:#0A0E17;
+  --text-dark:#121212;
+  --text-light:#ffffff;
+  --card-light:#ffffff;
+  --card-dark:#0f0f12;
+}
+
+/* Default = Light */ 
+body{
+  margin:0;
+  font-family:"Inter",sans-serif;
+  background:var(--bg-light);
+  color:var(--text-dark);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  overflow:hidden;
+  transition:.35s;
+}
+
+/* Theme Toggle Button */
+.theme-toggle{
+  position:fixed;
+  top:18px;
+  left:22px;
+  border:2px solid var(--accent);
+  color:var(--accent);
+  padding:10px 20px;
+  border-radius:14px;
+  background:transparent;
+  cursor:pointer;
+  transition:.3s;
+}
+
+/* Flashcard */
+.card{
+  width:85vw;
+  max-width:950px;
+  height:350px;
+  background:var(--card-light);
+  border-radius:28px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  cursor:pointer;
+  perspective:1400px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0px 25px 60px rgba(0,0,0,0.2);
+}
+
+.inner{
+  width:100%;
+  height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform .55s cubic-bezier(.22,.61,.36,1);
+}
+
+.card.flipped .inner{
+  transform:rotateY(180deg);
+}
+
+.side{
+  position:absolute;
+  inset:0;
+  backface-visibility:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:35px;
+  text-align:center;
+  font-size: clamp(18px,2.3vw,28px);
+  line-height:1.4;
+  transition:.25s;
+}
+
+.front{ transform:rotateY(0deg); }
+.back{ transform:rotateY(180deg); color:var(--accent); font-weight:bold; }
+
+/* FIX: hide inactive face */
+.card:not(.flipped) .back{ opacity:0; pointer-events:none; }
+.card.flipped .front{ opacity:0; pointer-events:none; }
+
+/* Controls */
+.controls{
+  margin-top:32px;
+  display:flex;
+  gap:24px;
+  justify-content:center;
+}
+
+.ctrl-btn{
+  background:transparent;
+  border:none;
+  font-size:28px;
+  cursor:pointer;
+  color:var(--accent);
+  padding:10px 30px;
+  border-radius:12px;
+  transition:.25s;
+}
+
+.ctrl-btn:hover{
+  background:rgba(255,123,0,0.15);
+  transform:scale(1.18);
+}
+
+.ctrl-btn:disabled{
+  opacity:.25;
+  cursor:not-allowed;
+}
+
+.counter{
+  opacity:.65;
+  font-size:14px;
+  width:80px;
+  text-align:center;
+}
+
+/* ======================
+   DARK THEME FIX
+   ====================== */
+body.dark{
+  background:var(--bg-dark);
+  color:var(--text-light);
+}
+
+body.dark .card{
+  background:var(--card-dark);
+  color:var(--text-light);
+  box-shadow:0px 25px 60px rgba(255,255,255,0.05);
+}
+
+body.dark .back{
+  color:var(--accent);
+}
+
+body.dark .ctrl-btn{
+  color:var(--accent);
+}
+
+body.dark .ctrl-btn:hover{
+  background:rgba(255,123,0,0.25);
+}
+</style>
+</head>
+
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+
+<div>
+  <div class="card" id="card" onclick="flipCard()">
+    <div class="inner">
+      <div class="side front" id="front"></div>
+      <div class="side back" id="back"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn" onclick="prevCard()" id="prevBtn">⬅</button>
+    <span class="counter" id="progress"></span>
+    <button class="ctrl-btn" onclick="nextCard()" id="nextBtn">➡</button>
+  </div>
+</div>
+
+<script>
+/* ------- Flashcards Content Here (Bank Example) -------- */
+const flashcards = [
+  { q: "Why do web application reconnaissance before deeper testing?", a: "To understand app structure/tech stack and find likely weak points so testing is targeted and efficient." },
+
+  { q: "Name 4 things you map/inspect during recon to understand an app’s structure.", a: "URL structure, client-side code (HTML/JS/CSS), technologies/frameworks, APIs/endpoints, plus headers/error messages." },
+
+  { q: "What info can HTTP headers, server banners, and error messages leak during recon?", a: "Server/software type, version, configuration hints, and sometimes debug details useful for fingerprinting." },
+
+  { q: "In threat modelling, what are the key inputs and outputs?", a: "Inputs: use cases, data flows, data schemas, deployment diagrams. Outputs: identified threats and vulnerabilities." },
+
+  { q: "What does STRIDE stand for?", a: "Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege." },
+
+  { q: "Give 3 examples of useful info attackers may find in web page source (markup).", a: "Hidden form fields, database connection strings, developer comments, included JS/CSS files, authenticated-only URLs." },
+
+  { q: "What is a common pitfall with hidden form fields?", a: "They’re easy to manipulate (parameter tampering), e.g., changing price/isAdmin values client-side." },
+
+  { q: "Authentication vs authorization: what’s the difference?", a: "Authentication proves who you are; authorization decides what you’re allowed to access/do." },
+
+  { q: "Name 3 common authorization design issues.", a: "IDOR, missing/weak RBAC, overly permissive defaults (also bad CORS, poor separation of admin functions)." },
+
+  { q: "List 4 common session-handling weaknesses.", a: "Weak session ID generation, insecure transmission/storage, missing regeneration after login, bad timeouts/termination, missing cookie flags (HttpOnly/Secure/SameSite)." }
+];
+
+let index=0, flipped=false;
+
+function updateCard(){
+  front.innerHTML=flashcards[index].q;
+  back.innerHTML=flashcards[index].a;
+  progress.textContent=`${index+1}/${flashcards.length}`;
+  prevBtn.disabled=index===0;
+  nextBtn.disabled=index===flashcards.length-1;
+  card.classList.remove("flipped");
+  flipped=false;
+}
+
+function flipCard(){ flipped=!flipped; card.classList.toggle("flipped",flipped); }
+
+function nextCard(){ if(index<flashcards.length-1) index++; updateCard(); }
+
+function prevCard(){ if(index>0) index--; updateCard(); }
+
+function toggleTheme(){ document.body.classList.toggle("dark"); }
+
+updateCard();
+</script>
+</body>
+</html>
