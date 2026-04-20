@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Group D — Windows Host Forensics Flashcards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{--accent:#ff7b00;--bg-light:#f4f4f7;--bg-dark:#0A0E17;--text-dark:#121212;--text-light:#ffffff;--card-light:#ffffff;--card-dark:#0f0f12;}
+body{margin:0;font-family:"Inter",sans-serif;background:var(--bg-light);color:var(--text-dark);display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;transition:.35s;}
+.theme-toggle{position:fixed;top:18px;left:22px;border:2px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:14px;background:transparent;cursor:pointer;transition:.3s;}
+.group-label{position:fixed;top:18px;right:22px;font-weight:700;letter-spacing:1px;color:var(--accent);}
+.card{width:85vw;max-width:950px;height:350px;background:var(--card-light);border-radius:28px;display:flex;justify-content:center;align-items:center;cursor:pointer;perspective:1400px;position:relative;overflow:hidden;box-shadow:0px 25px 60px rgba(0,0,0,0.2);}
+.inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.22,.61,.36,1);}
+.card.flipped .inner{transform:rotateY(180deg);}
+.side{position:absolute;inset:0;backface-visibility:hidden;display:flex;justify-content:center;align-items:center;padding:35px;text-align:center;font-size:clamp(18px,2.3vw,28px);line-height:1.4;transition:.25s;}
+.front{transform:rotateY(0deg);}
+.back{transform:rotateY(180deg);color:var(--accent);font-weight:bold;}
+.card:not(.flipped) .back{opacity:0;pointer-events:none;}
+.card.flipped .front{opacity:0;pointer-events:none;}
+.controls{margin-top:32px;display:flex;gap:24px;justify-content:center;}
+.ctrl-btn{background:transparent;border:none;font-size:28px;cursor:pointer;color:var(--accent);padding:10px 30px;border-radius:12px;transition:.25s;}
+.ctrl-btn:hover{background:rgba(255,123,0,0.15);transform:scale(1.18);}
+.ctrl-btn:disabled{opacity:.25;cursor:not-allowed;}
+.counter{opacity:.65;font-size:14px;width:80px;text-align:center;}
+body.dark{background:var(--bg-dark);color:var(--text-light);}
+body.dark .card{background:var(--card-dark);color:var(--text-light);box-shadow:0px 25px 60px rgba(255,255,255,0.05);}
+body.dark .back{color:var(--accent);}
+body.dark .ctrl-btn{color:var(--accent);}
+body.dark .ctrl-btn:hover{background:rgba(255,123,0,0.25);}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+<div class="group-label">GROUP D</div>
+<div>
+  <div class="card" id="card" onclick="flipCard()">
+    <div class="inner">
+      <div class="side front" id="front"></div>
+      <div class="side back" id="back"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn" onclick="prevCard()" id="prevBtn">⬅</button>
+    <span class="counter" id="progress"></span>
+    <button class="ctrl-btn" onclick="nextCard()" id="nextBtn">➡</button>
+  </div>
+</div>
+<script>
+/* Knowledge Group D — Windows Host Forensics */
+const flashcards = [
+  { q: "What is the MFT and which file system does it belong to?", a: "Master File Table — the core metadata database of NTFS that describes every file/directory (timestamps, attributes, $DATA/$FILE_NAME, etc.)." },
+  { q: "What are the four MACB timestamps in NTFS?", a: "Modified, Accessed, Created (metadata/Changed in Linux parlance), and Birth (file creation). NTFS stores them in both $STANDARD_INFORMATION and $FILE_NAME attributes." },
+  { q: "What are Alternate Data Streams (ADS)?", a: "NTFS feature allowing additional named data streams to be attached to a file (file.txt:hidden.exe) — often abused to hide malicious payloads." },
+  { q: "Name the five main registry hives on a running Windows system.", a: "HKLM (SAM, SECURITY, SOFTWARE, SYSTEM), HKCU, HKU, HKCC, HKCR." },
+  { q: "Where is the SAM hive stored on disk and what does it contain?", a: "C:\\Windows\\System32\\config\\SAM — stores local user account information and password hashes (NTLM)." },
+  { q: "What is the purpose of Windows Prefetch files and where are they stored?", a: "Speed up frequently-run programs by pre-loading data; forensically they prove an executable ran. Stored in C:\\Windows\\Prefetch as .pf files." },
+  { q: "What is the Shimcache (AppCompatCache)?", a: "A Windows compatibility-engine cache that records file paths, timestamps, and limited execution info for executables — used by analysts as strong evidence of program presence/execution." },
+  { q: "What does Amcache.hve record?", a: "Metadata about installed/executed applications (full path, SHA-1, timestamps, publisher) — a rich execution-evidence artefact." },
+  { q: "What are Volume Shadow Copies (VSS) and why do they matter forensically?", a: "Point-in-time snapshots of volumes. They often contain older versions of files and registry hives, allowing recovery of deleted or modified data." },
+  { q: "Name the three core Windows event log files and their primary contents.", a: "Security.evtx (logon/auth/audit), System.evtx (drivers/services/OS), Application.evtx (application-level events). Stored in C:\\Windows\\System32\\winevt\\Logs." },
+  { q: "Which Event ID indicates a successful logon, and which indicates a failed logon?", a: "4624 = successful logon; 4625 = failed logon. (4634 = logoff, 4672 = special privileges assigned.)" },
+  { q: "What is the NTUSER.DAT file?", a: "Per-user registry hive containing HKCU settings for a user — located in the root of that user's profile folder." },
+  { q: "What does FTK Imager do?", a: "Free imaging / previewing tool — creates forensic disk, partition, memory, and volume images (dd, E01, AFF) and mounts/examines them read-only." },
+  { q: "What is the Volatility Framework used for?", a: "Open-source memory forensics — analyse RAM dumps for processes, DLLs, network connections, hives, code injections, rootkit artefacts, etc." },
+  { q: "What are $MFT, $LogFile, and $UsnJrnl used for on NTFS?", a: "$MFT = file metadata table; $LogFile = transactional metadata journal (used for recovery); $UsnJrnl = Update Sequence Number journal recording file-system changes." },
+  { q: "Where do Windows UserAssist keys live and what do they show?", a: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist — ROT-13 encoded program-execution counts from the Start menu/Explorer." },
+  { q: "What is a Jump List and why is it useful?", a: "Per-application list of recently opened files (Windows 7+), stored as AutomaticDestinations-ms / CustomDestinations-ms — shows user document-access history." },
+  { q: "Name two common Registry 'autorun' persistence locations.", a: "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run (and RunOnce); HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run. Also Services, Scheduled Tasks, Image File Execution Options." }
+];
+let index=0, flipped=false;
+function updateCard(){
+  front.innerHTML=flashcards[index].q;
+  back.innerHTML=flashcards[index].a;
+  progress.textContent=`${index+1}/${flashcards.length}`;
+  prevBtn.disabled=index===0;
+  nextBtn.disabled=index===flashcards.length-1;
+  card.classList.remove("flipped");
+  flipped=false;
+}
+function flipCard(){flipped=!flipped;card.classList.toggle("flipped",flipped);}
+function nextCard(){if(index<flashcards.length-1) index++;updateCard();}
+function prevCard(){if(index>0) index--;updateCard();}
+function toggleTheme(){document.body.classList.toggle("dark");}
+updateCard();
+</script>
+</body>
+</html>

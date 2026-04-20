@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Group F — Reverse Engineering Malware Flashcards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{--accent:#ff7b00;--bg-light:#f4f4f7;--bg-dark:#0A0E17;--text-dark:#121212;--text-light:#ffffff;--card-light:#ffffff;--card-dark:#0f0f12;}
+body{margin:0;font-family:"Inter",sans-serif;background:var(--bg-light);color:var(--text-dark);display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;transition:.35s;}
+.theme-toggle{position:fixed;top:18px;left:22px;border:2px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:14px;background:transparent;cursor:pointer;transition:.3s;}
+.group-label{position:fixed;top:18px;right:22px;font-weight:700;letter-spacing:1px;color:var(--accent);}
+.card{width:85vw;max-width:950px;height:350px;background:var(--card-light);border-radius:28px;display:flex;justify-content:center;align-items:center;cursor:pointer;perspective:1400px;position:relative;overflow:hidden;box-shadow:0px 25px 60px rgba(0,0,0,0.2);}
+.inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.22,.61,.36,1);}
+.card.flipped .inner{transform:rotateY(180deg);}
+.side{position:absolute;inset:0;backface-visibility:hidden;display:flex;justify-content:center;align-items:center;padding:35px;text-align:center;font-size:clamp(18px,2.3vw,28px);line-height:1.4;transition:.25s;}
+.front{transform:rotateY(0deg);}
+.back{transform:rotateY(180deg);color:var(--accent);font-weight:bold;}
+.card:not(.flipped) .back{opacity:0;pointer-events:none;}
+.card.flipped .front{opacity:0;pointer-events:none;}
+.controls{margin-top:32px;display:flex;gap:24px;justify-content:center;}
+.ctrl-btn{background:transparent;border:none;font-size:28px;cursor:pointer;color:var(--accent);padding:10px 30px;border-radius:12px;transition:.25s;}
+.ctrl-btn:hover{background:rgba(255,123,0,0.15);transform:scale(1.18);}
+.ctrl-btn:disabled{opacity:.25;cursor:not-allowed;}
+.counter{opacity:.65;font-size:14px;width:80px;text-align:center;}
+body.dark{background:var(--bg-dark);color:var(--text-light);}
+body.dark .card{background:var(--card-dark);color:var(--text-light);box-shadow:0px 25px 60px rgba(255,255,255,0.05);}
+body.dark .back{color:var(--accent);}
+body.dark .ctrl-btn{color:var(--accent);}
+body.dark .ctrl-btn:hover{background:rgba(255,123,0,0.25);}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+<div class="group-label">GROUP F</div>
+<div>
+  <div class="card" id="card" onclick="flipCard()">
+    <div class="inner">
+      <div class="side front" id="front"></div>
+      <div class="side back" id="back"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn" onclick="prevCard()" id="prevBtn">⬅</button>
+    <span class="counter" id="progress"></span>
+    <button class="ctrl-btn" onclick="nextCard()" id="nextBtn">➡</button>
+  </div>
+</div>
+<script>
+/* Knowledge Group F — Reverse Engineering Malware */
+const flashcards = [
+  { q: "What are the main goals of malware analysis?", a: "Determine if a file is malicious, extract IOCs, create host- and network-based signatures, determine capabilities, and update existing signatures." },
+  { q: "What is the difference between static and dynamic analysis?", a: "Static = examining artefacts WITHOUT running the code (strings, headers, imports, disassembly). Dynamic = behavioural analysis by executing the sample in a controlled environment (sandbox/VM + monitoring)." },
+  { q: "What is an Indicator of Compromise (IOC)?", a: "An artefact observed on a network or host that indicates with high confidence a computer intrusion — e.g. file hashes, domains, IPs, registry keys, mutex names, strings." },
+  { q: "Rank these IOCs from LOW to HIGH forensic value (typical): file hash, IP address, encryption algorithm, developer toolmarks.", a: "Low: file hash, IP address. High: encryption algorithm / developer toolmarks — because they tie to adversary craft, not easily changed between samples." },
+  { q: "What is SSDeep?", a: "A fuzzy (context-triggered piecewise) hashing tool that produces similarity-comparable hashes, letting analysts find files that are 'like' a known sample." },
+  { q: "What is YARA?", a: "A pattern-matching tool that identifies and classifies malware using rules made of strings/bytes/regex and Boolean conditions." },
+  { q: "What two signatures does a Windows PE file start with?", a: "The DOS header begins with 'MZ' and the NT headers begin with 'PE\\0\\0'." },
+  { q: "Name three common PE sections and what they hold.", a: ".text = code, .data = initialised data, .rdata = read-only data/imports, .rsrc = resources (icons, manifests), .reloc = relocations." },
+  { q: "What is a 'packer' and why do malware authors use one?", a: "A tool that compresses/encrypts a binary and prepends a stub that unpacks it at runtime. Used to hide strings/imports, evade AV signatures, and frustrate static analysis." },
+  { q: "What is UPX?", a: "A widely used open-source executable packer (Ultimate Packer for eXecutables); easy to identify and unpack statically." },
+  { q: "What is PEiD?", a: "A Windows tool that identifies common packers, cryptors, and compilers used on a PE file by matching entry-point signatures." },
+  { q: "What is a rootkit, and what's the difference between user-mode and kernel-mode rootkits?", a: "Malware for gaining and hiding privileged access. User-mode (Ring 3) runs like an app; Kernel-mode (Ring 0) runs with full privileges and is much harder to detect." },
+  { q: "Describe 'process hollowing'.", a: "Start a legitimate process in a suspended state, unmap its image, write malicious code in its place, fix the thread context, and resume — the OS/AV sees a 'clean' process name." },
+  { q: "Describe classic DLL injection (high level).", a: "Open a target process, allocate memory in it, write the DLL path, and create a remote thread that calls LoadLibrary on that path — forcing the target to load the malicious DLL." },
+  { q: "Name three anti-debugging APIs or techniques.", a: "IsDebuggerPresent, CheckRemoteDebuggerPresent, NtQueryInformationProcess, OutputDebugString tricks, PEB.BeingDebugged flag, int 2D/3, rdtsc timing checks." },
+  { q: "Name three anti-VM / anti-sandbox indicators malware looks for.", a: "Virtual hardware (VMware/VBox MAC prefixes, BIOS strings), known process names (vboxservice, vmtoolsd), registry keys, few recent documents, small RAM/disk, sleeping past sandbox timeouts." },
+  { q: "What is Stuxnet (briefly)?", a: "A 2010 worm targeting industrial PLCs; used four zero-days and is widely attributed to state actors targeting Iran's nuclear programme — a landmark sophisticated malware." },
+  { q: "In malware OPSEC, why do analysts use TOR/VPNs when investigating attacker infrastructure?", a: "To avoid tipping off the attacker — if requests come from the investigator's real IP, the adversary may change infrastructure, wipe evidence, or retaliate." },
+  { q: "What is an imphash?", a: "A hash of a PE file's import table (library + API names in order) used to group related samples likely compiled from the same source / toolchain." },
+  { q: "What signatures does Volatility typically extract from memory relevant to malware analysis?", a: "Running processes (including hidden), loaded DLLs, injected code, network connections, open handles, registry data, kernel module/driver lists, and shellcode/YARA matches." }
+];
+let index=0, flipped=false;
+function updateCard(){
+  front.innerHTML=flashcards[index].q;
+  back.innerHTML=flashcards[index].a;
+  progress.textContent=`${index+1}/${flashcards.length}`;
+  prevBtn.disabled=index===0;
+  nextBtn.disabled=index===flashcards.length-1;
+  card.classList.remove("flipped");
+  flipped=false;
+}
+function flipCard(){flipped=!flipped;card.classList.toggle("flipped",flipped);}
+function nextCard(){if(index<flashcards.length-1) index++;updateCard();}
+function prevCard(){if(index>0) index--;updateCard();}
+function toggleTheme(){document.body.classList.toggle("dark");}
+updateCard();
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Group A — Incident Response & Forensics Flashcards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{
+  --accent:#ff7b00;
+  --bg-light:#f4f4f7;
+  --bg-dark:#0A0E17;
+  --text-dark:#121212;
+  --text-light:#ffffff;
+  --card-light:#ffffff;
+  --card-dark:#0f0f12;
+}
+body{
+  margin:0;
+  font-family:"Inter",sans-serif;
+  background:var(--bg-light);
+  color:var(--text-dark);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  overflow:hidden;
+  transition:.35s;
+}
+.theme-toggle{
+  position:fixed;
+  top:18px;
+  left:22px;
+  border:2px solid var(--accent);
+  color:var(--accent);
+  padding:10px 20px;
+  border-radius:14px;
+  background:transparent;
+  cursor:pointer;
+  transition:.3s;
+}
+.group-label{
+  position:fixed;
+  top:18px;
+  right:22px;
+  font-weight:700;
+  letter-spacing:1px;
+  color:var(--accent);
+}
+.card{
+  width:85vw;
+  max-width:950px;
+  height:350px;
+  background:var(--card-light);
+  border-radius:28px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  cursor:pointer;
+  perspective:1400px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0px 25px 60px rgba(0,0,0,0.2);
+}
+.inner{
+  width:100%;
+  height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform .55s cubic-bezier(.22,.61,.36,1);
+}
+.card.flipped .inner{ transform:rotateY(180deg); }
+.side{
+  position:absolute;
+  inset:0;
+  backface-visibility:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:35px;
+  text-align:center;
+  font-size: clamp(18px,2.3vw,28px);
+  line-height:1.4;
+  transition:.25s;
+}
+.front{ transform:rotateY(0deg); }
+.back{ transform:rotateY(180deg); color:var(--accent); font-weight:bold; }
+.card:not(.flipped) .back{ opacity:0; pointer-events:none; }
+.card.flipped .front{ opacity:0; pointer-events:none; }
+.controls{
+  margin-top:32px;
+  display:flex;
+  gap:24px;
+  justify-content:center;
+}
+.ctrl-btn{
+  background:transparent;
+  border:none;
+  font-size:28px;
+  cursor:pointer;
+  color:var(--accent);
+  padding:10px 30px;
+  border-radius:12px;
+  transition:.25s;
+}
+.ctrl-btn:hover{ background:rgba(255,123,0,0.15); transform:scale(1.18); }
+.ctrl-btn:disabled{ opacity:.25; cursor:not-allowed; }
+.counter{ opacity:.65; font-size:14px; width:80px; text-align:center; }
+body.dark{ background:var(--bg-dark); color:var(--text-light); }
+body.dark .card{ background:var(--card-dark); color:var(--text-light); box-shadow:0px 25px 60px rgba(255,255,255,0.05); }
+body.dark .back{ color:var(--accent); }
+body.dark .ctrl-btn{ color:var(--accent); }
+body.dark .ctrl-btn:hover{ background:rgba(255,123,0,0.25); }
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+<div class="group-label">GROUP A</div>
+<div>
+  <div class="card" id="card" onclick="flipCard()">
+    <div class="inner">
+      <div class="side front" id="front"></div>
+      <div class="side back" id="back"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn" onclick="prevCard()" id="prevBtn">⬅</button>
+    <span class="counter" id="progress"></span>
+    <button class="ctrl-btn" onclick="nextCard()" id="nextBtn">➡</button>
+  </div>
+</div>
+<script>
+/* Knowledge Group A — Incident Response, Digital Forensics & Legislation */
+const flashcards = [
+  { q: "What are the 7 phases of the Lockheed Martin Cyber Kill Chain (in order)?", a: "1) Reconnaissance, 2) Weaponization, 3) Delivery, 4) Exploitation, 5) Installation, 6) Command & Control (C2), 7) Actions on Objectives." },
+  { q: "What happens during the Reconnaissance phase of the Cyber Kill Chain?", a: "The attacker gathers information about the target (OSINT, scanning, social engineering, looking for weaknesses/employees/technology in use)." },
+  { q: "What is the purpose of the Weaponization phase?", a: "The attacker couples an exploit with a deliverable payload (e.g. a malicious document, trojan installer, or exploit kit)." },
+  { q: "What does the Delivery phase refer to in the kill chain?", a: "Transmission of the weapon to the target environment — e.g. phishing email, watering-hole site, USB drop, malicious web ad." },
+  { q: "What is the final phase of the kill chain and what does it involve?", a: "Actions on Objectives — the attacker executes their goals: data theft, destruction, lateral movement, ransom, espionage, etc." },
+  { q: "State ACPO Principle 1.", a: "No action taken by law enforcement / their agents should change data held on a computer or storage media that may subsequently be relied upon in court." },
+  { q: "State ACPO Principle 2.", a: "Where a person finds it necessary to access original data, they must be competent to do so and able to give evidence explaining the relevance and implications of their actions." },
+  { q: "State ACPO Principle 3.", a: "An audit trail or other record of all processes applied to electronic-based evidence should be created and preserved so an independent third party can examine them and achieve the same result." },
+  { q: "State ACPO Principle 4.", a: "The person in charge of the investigation (the case officer) has overall responsibility for ensuring the law and the ACPO principles are adhered to." },
+  { q: "What UK law criminalises unauthorised access to computer material?", a: "The Computer Misuse Act 1990." },
+  { q: "What is RIPA 2000 concerned with?", a: "The Regulation of Investigatory Powers Act 2000 — regulates interception of communications, surveillance, use of covert human intelligence sources, and access to communications data." },
+  { q: "What UK / EU regulations cover the protection of personal data?", a: "Data Protection Act 2018 and the UK GDPR (implementing / mirroring the EU GDPR)." },
+  { q: "What does 'chain of custody' mean?", a: "The chronological documentation that shows the seizure, custody, control, transfer, analysis, and disposition of physical or digital evidence — proving it has not been tampered with." },
+  { q: "Why is hashing (MD5/SHA) critical during acquisition?", a: "It produces a fingerprint of the evidence at seizure; re-hashing later proves integrity (the image is identical / not altered)." },
+  { q: "What is a write-blocker?", a: "A hardware or software device that allows read-only access to a piece of media, preventing accidental writes that would change the evidence." },
+  { q: "What is the order of volatility when collecting evidence?", a: "From most volatile to least: CPU registers/cache → RAM → running processes/network state → temporary files → disk → remote logging → archival media." },
+  { q: "What are the key roles usually present in an incident response team?", a: "Incident Manager, Analysts/Forensic examiners, Malware RE, Threat Intel, Legal, Comms/PR, and liaison with management/law enforcement." },
+  { q: "Name the common incident response lifecycle phases (SANS/NIST).", a: "Preparation → Identification → Containment → Eradication → Recovery → Lessons Learned." }
+];
+let index=0, flipped=false;
+function updateCard(){
+  front.innerHTML=flashcards[index].q;
+  back.innerHTML=flashcards[index].a;
+  progress.textContent=`${index+1}/${flashcards.length}`;
+  prevBtn.disabled=index===0;
+  nextBtn.disabled=index===flashcards.length-1;
+  card.classList.remove("flipped");
+  flipped=false;
+}
+function flipCard(){ flipped=!flipped; card.classList.toggle("flipped",flipped); }
+function nextCard(){ if(index<flashcards.length-1) index++; updateCard(); }
+function prevCard(){ if(index>0) index--; updateCard(); }
+function toggleTheme(){ document.body.classList.toggle("dark"); }
+updateCard();
+</script>
+</body>
+</html>

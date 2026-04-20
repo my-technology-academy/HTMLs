@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Group B — Core Protocols & Cryptography Flashcards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{--accent:#ff7b00;--bg-light:#f4f4f7;--bg-dark:#0A0E17;--text-dark:#121212;--text-light:#ffffff;--card-light:#ffffff;--card-dark:#0f0f12;}
+body{margin:0;font-family:"Inter",sans-serif;background:var(--bg-light);color:var(--text-dark);display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;transition:.35s;}
+.theme-toggle{position:fixed;top:18px;left:22px;border:2px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:14px;background:transparent;cursor:pointer;transition:.3s;}
+.group-label{position:fixed;top:18px;right:22px;font-weight:700;letter-spacing:1px;color:var(--accent);}
+.card{width:85vw;max-width:950px;height:350px;background:var(--card-light);border-radius:28px;display:flex;justify-content:center;align-items:center;cursor:pointer;perspective:1400px;position:relative;overflow:hidden;box-shadow:0px 25px 60px rgba(0,0,0,0.2);}
+.inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.22,.61,.36,1);}
+.card.flipped .inner{transform:rotateY(180deg);}
+.side{position:absolute;inset:0;backface-visibility:hidden;display:flex;justify-content:center;align-items:center;padding:35px;text-align:center;font-size:clamp(18px,2.3vw,28px);line-height:1.4;transition:.25s;}
+.front{transform:rotateY(0deg);}
+.back{transform:rotateY(180deg);color:var(--accent);font-weight:bold;}
+.card:not(.flipped) .back{opacity:0;pointer-events:none;}
+.card.flipped .front{opacity:0;pointer-events:none;}
+.controls{margin-top:32px;display:flex;gap:24px;justify-content:center;}
+.ctrl-btn{background:transparent;border:none;font-size:28px;cursor:pointer;color:var(--accent);padding:10px 30px;border-radius:12px;transition:.25s;}
+.ctrl-btn:hover{background:rgba(255,123,0,0.15);transform:scale(1.18);}
+.ctrl-btn:disabled{opacity:.25;cursor:not-allowed;}
+.counter{opacity:.65;font-size:14px;width:80px;text-align:center;}
+body.dark{background:var(--bg-dark);color:var(--text-light);}
+body.dark .card{background:var(--card-dark);color:var(--text-light);box-shadow:0px 25px 60px rgba(255,255,255,0.05);}
+body.dark .back{color:var(--accent);}
+body.dark .ctrl-btn{color:var(--accent);}
+body.dark .ctrl-btn:hover{background:rgba(255,123,0,0.25);}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+<div class="group-label">GROUP B</div>
+<div>
+  <div class="card" id="card" onclick="flipCard()">
+    <div class="inner">
+      <div class="side front" id="front"></div>
+      <div class="side back" id="back"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn" onclick="prevCard()" id="prevBtn">⬅</button>
+    <span class="counter" id="progress"></span>
+    <button class="ctrl-btn" onclick="nextCard()" id="nextBtn">➡</button>
+  </div>
+</div>
+<script>
+/* Knowledge Group B — Core Protocols & Cryptography */
+const flashcards = [
+  { q: "How long is an IPv4 address and how long is an IPv6 address?", a: "IPv4 = 32 bits (four 8-bit octets). IPv6 = 128 bits (eight 16-bit hex groups)." },
+  { q: "Which layer-4 protocol is connection-oriented and which is connectionless?", a: "TCP is connection-oriented (three-way handshake, reliable). UDP is connectionless and best-effort (no handshake, no delivery guarantee)." },
+  { q: "What is the TCP three-way handshake?", a: "SYN → SYN/ACK → ACK. Client sends SYN, server replies SYN/ACK, client confirms with ACK before data flows." },
+  { q: "What is ICMP used for? Give two example message types.", a: "ICMP is used for diagnostic/control messages on IP networks. Examples: Echo Request/Reply (ping) and Destination Unreachable." },
+  { q: "List the default ports for HTTP, HTTPS, SSH, DNS, SMTP, and FTP.", a: "HTTP 80, HTTPS 443, SSH 22, DNS 53 (UDP/TCP), SMTP 25, FTP 21 (control)/20 (data)." },
+  { q: "What does DHCP do and name one of its message types.", a: "DHCP dynamically assigns IP configuration to clients. Messages (DORA): Discover, Offer, Request, Ack." },
+  { q: "What is the difference between symmetric and asymmetric cryptography?", a: "Symmetric uses the same key to encrypt and decrypt (fast, key-exchange problem). Asymmetric uses a public/private key pair (slower, solves key exchange & signatures)." },
+  { q: "Name two symmetric block ciphers and one symmetric stream cipher.", a: "Block: AES, DES/3DES. Stream: RC4." },
+  { q: "What key sizes does AES support?", a: "128, 192, and 256 bits." },
+  { q: "Is RSA symmetric or asymmetric, and what is it typically used for?", a: "Asymmetric. Used for key exchange, digital signatures, and small-data encryption." },
+  { q: "What is a cryptographic hash? Name two common algorithms.", a: "A one-way function producing a fixed-size digest from any input; used for integrity. Examples: MD5, SHA-1, SHA-256." },
+  { q: "Why are MD5 and SHA-1 no longer recommended for security?", a: "Collision attacks are practical — attackers can craft two inputs with the same hash, breaking integrity/authentication guarantees." },
+  { q: "What is HMAC?", a: "Hash-based Message Authentication Code — uses a shared secret with a hash function to authenticate a message's origin and integrity." },
+  { q: "Why is WEP considered broken?", a: "Weak RC4 IV usage and small IV space allow key recovery from captured traffic in minutes using tools like aircrack-ng." },
+  { q: "What is the difference between WPA and WPA2?", a: "WPA uses TKIP (transitional fix for WEP). WPA2 uses CCMP/AES, the modern standard, with much stronger security." },
+  { q: "What does SMB do, and on what port does it commonly run?", a: "SMB provides file/printer sharing on Windows networks. Runs on TCP/445 (modern) — historically over NetBIOS on 137–139." },
+  { q: "What is IRC and why is it relevant to intrusion analysts?", a: "Internet Relay Chat — a text-based chat protocol (port 6667); historically used as a botnet Command & Control channel." },
+  { q: "What is SNMP used for and what is its main security concern (v1/v2c)?", a: "Network device management/monitoring. v1/v2c send community strings in clear text — trivially sniffed; use SNMPv3 with auth + priv." }
+];
+let index=0, flipped=false;
+function updateCard(){
+  front.innerHTML=flashcards[index].q;
+  back.innerHTML=flashcards[index].a;
+  progress.textContent=`${index+1}/${flashcards.length}`;
+  prevBtn.disabled=index===0;
+  nextBtn.disabled=index===flashcards.length-1;
+  card.classList.remove("flipped");
+  flipped=false;
+}
+function flipCard(){flipped=!flipped;card.classList.toggle("flipped",flipped);}
+function nextCard(){if(index<flashcards.length-1) index++;updateCard();}
+function prevCard(){if(index>0) index--;updateCard();}
+function toggleTheme(){document.body.classList.toggle("dark");}
+updateCard();
+</script>
+</body>
+</html>

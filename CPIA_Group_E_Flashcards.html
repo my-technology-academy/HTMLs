@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Group E — Network Capture & Traffic Analysis Flashcards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{--accent:#ff7b00;--bg-light:#f4f4f7;--bg-dark:#0A0E17;--text-dark:#121212;--text-light:#ffffff;--card-light:#ffffff;--card-dark:#0f0f12;}
+body{margin:0;font-family:"Inter",sans-serif;background:var(--bg-light);color:var(--text-dark);display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;transition:.35s;}
+.theme-toggle{position:fixed;top:18px;left:22px;border:2px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:14px;background:transparent;cursor:pointer;transition:.3s;}
+.group-label{position:fixed;top:18px;right:22px;font-weight:700;letter-spacing:1px;color:var(--accent);}
+.card{width:85vw;max-width:950px;height:350px;background:var(--card-light);border-radius:28px;display:flex;justify-content:center;align-items:center;cursor:pointer;perspective:1400px;position:relative;overflow:hidden;box-shadow:0px 25px 60px rgba(0,0,0,0.2);}
+.inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.22,.61,.36,1);}
+.card.flipped .inner{transform:rotateY(180deg);}
+.side{position:absolute;inset:0;backface-visibility:hidden;display:flex;justify-content:center;align-items:center;padding:35px;text-align:center;font-size:clamp(18px,2.3vw,28px);line-height:1.4;transition:.25s;}
+.front{transform:rotateY(0deg);}
+.back{transform:rotateY(180deg);color:var(--accent);font-weight:bold;}
+.card:not(.flipped) .back{opacity:0;pointer-events:none;}
+.card.flipped .front{opacity:0;pointer-events:none;}
+.controls{margin-top:32px;display:flex;gap:24px;justify-content:center;}
+.ctrl-btn{background:transparent;border:none;font-size:28px;cursor:pointer;color:var(--accent);padding:10px 30px;border-radius:12px;transition:.25s;}
+.ctrl-btn:hover{background:rgba(255,123,0,0.15);transform:scale(1.18);}
+.ctrl-btn:disabled{opacity:.25;cursor:not-allowed;}
+.counter{opacity:.65;font-size:14px;width:80px;text-align:center;}
+body.dark{background:var(--bg-dark);color:var(--text-light);}
+body.dark .card{background:var(--card-dark);color:var(--text-light);box-shadow:0px 25px 60px rgba(255,255,255,0.05);}
+body.dark .back{color:var(--accent);}
+body.dark .ctrl-btn{color:var(--accent);}
+body.dark .ctrl-btn:hover{background:rgba(255,123,0,0.25);}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+<div class="group-label">GROUP E</div>
+<div>
+  <div class="card" id="card" onclick="flipCard()">
+    <div class="inner">
+      <div class="side front" id="front"></div>
+      <div class="side back" id="back"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn" onclick="prevCard()" id="prevBtn">⬅</button>
+    <span class="counter" id="progress"></span>
+    <button class="ctrl-btn" onclick="nextCard()" id="nextBtn">➡</button>
+  </div>
+</div>
+<script>
+/* Knowledge Group E — Network Capture & Traffic Analysis */
+const flashcards = [
+  { q: "What is Wireshark?", a: "A free, open-source graphical network protocol analyzer used for capturing and dissecting packets from a live interface or a saved pcap file." },
+  { q: "What is tshark?", a: "The command-line (non-GUI) counterpart of Wireshark — used for scriptable captures and analysis using the same dissectors." },
+  { q: "What is tcpdump?", a: "A classic command-line packet capture tool for Unix/Linux that uses libpcap and the BPF filter language." },
+  { q: "What is a pcap / pcapng file?", a: "A binary capture file format storing packets captured from an interface. PCAPNG adds metadata, multiple interfaces, comments, and timestamps at nanosecond precision." },
+  { q: "What is 'promiscuous mode' on a NIC?", a: "A mode in which the NIC forwards ALL frames seen on the wire to the OS — not just those addressed to its MAC — required for general packet sniffing." },
+  { q: "What is 'monitor mode' on a wireless NIC?", a: "A mode where the wireless NIC captures raw 802.11 frames (management, control, data) from all BSSIDs without associating to any AP." },
+  { q: "What is a SPAN / port-mirror port?", a: "A switch feature that copies traffic from one or more source ports/VLANs to a monitoring port where a capture device is attached." },
+  { q: "What is a network TAP and why is it preferred over SPAN for forensic capture?", a: "A physical device inserted inline that copies traffic to a monitor port. Unlike SPAN it is passive, doesn't drop packets under load, and doesn't miss L1/L2 errors." },
+  { q: "What is BPF?", a: "Berkeley Packet Filter — a low-level filter language used by libpcap/tcpdump to match packets in-kernel (e.g. 'tcp port 80 and host 10.0.0.5')." },
+  { q: "Give a tcpdump BPF filter for traffic to/from host 10.0.0.5 on port 53.", a: "tcpdump 'host 10.0.0.5 and port 53'  (add -i <iface> and -w file.pcap to write to disk)." },
+  { q: "What is the difference between a tcpdump 'capture filter' and Wireshark's 'display filter'?", a: "Capture filter uses BPF and is applied BEFORE packets are written. Display filter uses Wireshark's dissector syntax (e.g. http.request) and is applied to already-captured packets." },
+  { q: "What is NetworkMiner?", a: "A network forensic analysis tool that passively parses pcaps to extract files, credentials, sessions, hosts, DNS, OS fingerprints, and more." },
+  { q: "What is p0f used for?", a: "Passive OS fingerprinting — infers the operating system of hosts from subtle details in TCP/IP handshakes without sending any probe packets." },
+  { q: "What is 'follow stream' in Wireshark and why is it useful?", a: "It reassembles a TCP/UDP conversation and presents it as readable text — helpful for inspecting HTTP/IRC/plaintext C2 traffic." },
+  { q: "How do you identify beaconing malware in a pcap?", a: "Look for periodic, regular-interval outbound connections to the same host/domain with small, uniform request sizes — often obvious in I/O graph timelines." },
+  { q: "Why can't you read TLS content directly from a pcap?", a: "The payload is encrypted end-to-end. You need the session keys (e.g. via SSLKEYLOGFILE) or a MITM-decrypted capture to see plaintext." },
+  { q: "Where do SMTP, HTTP, and DNS typically live — TCP or UDP and which ports?", a: "SMTP: TCP/25 (submission 587/465). HTTP: TCP/80 (HTTPS 443). DNS: primarily UDP/53 (TCP/53 for zone transfers and large answers)." },
+  { q: "Name two ways to extract files from a pcap automatically.", a: "Wireshark → File → Export Objects (HTTP/SMB/TFTP/FTP), or NetworkMiner's 'Files' tab which reassembles carved files." }
+];
+let index=0, flipped=false;
+function updateCard(){
+  front.innerHTML=flashcards[index].q;
+  back.innerHTML=flashcards[index].a;
+  progress.textContent=`${index+1}/${flashcards.length}`;
+  prevBtn.disabled=index===0;
+  nextBtn.disabled=index===flashcards.length-1;
+  card.classList.remove("flipped");
+  flipped=false;
+}
+function flipCard(){flipped=!flipped;card.classList.toggle("flipped",flipped);}
+function nextCard(){if(index<flashcards.length-1) index++;updateCard();}
+function prevCard(){if(index>0) index--;updateCard();}
+function toggleTheme(){document.body.classList.toggle("dark");}
+updateCard();
+</script>
+</body>
+</html>
